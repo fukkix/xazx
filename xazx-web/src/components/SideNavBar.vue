@@ -24,7 +24,11 @@ const auth = useAuthStore()
         <el-icon :size="18"><DataBoard /></el-icon>
         演示文稿 (PPTs)
       </router-link>
-      <router-link v-if="auth.user?.role === 'super_admin' || auth.user?.role === 'admin'" to="/accounts" active-class="bg-blue-800 dark:bg-blue-900 !text-white translate-x-1" class="text-blue-200/70 hover:text-white rounded-lg px-4 py-3 flex items-center gap-3 font-manrope text-sm font-medium hover:bg-blue-800/50 transition-all border-t border-blue-800 mt-4 pt-4">
+      <router-link to="/knowledge" active-class="bg-blue-800 dark:bg-blue-900 !text-white translate-x-1" class="text-blue-200/70 hover:text-white rounded-lg px-4 py-3 flex items-center gap-3 font-manrope text-sm font-medium hover:bg-blue-800/50 transition-all border-t border-blue-800 mt-4 pt-4">
+        <el-icon :size="18"><Opportunity /></el-icon>
+        知识库 (Wiki)
+      </router-link>
+      <router-link v-if="auth.user?.role === 'super_admin' || auth.user?.role === 'admin'" to="/accounts" active-class="bg-blue-800 dark:bg-blue-900 !text-white translate-x-1" class="text-blue-200/70 hover:text-white rounded-lg px-4 py-3 flex items-center gap-3 font-manrope text-sm font-medium hover:bg-blue-800/50 transition-all">
         <el-icon :size="18"><User /></el-icon>
         账号及权限管理
       </router-link>

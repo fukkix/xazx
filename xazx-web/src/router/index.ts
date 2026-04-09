@@ -26,6 +26,11 @@ const router = createRouter({
           path: 'resources/:id',
           name: 'resource-detail',
           component: () => import('../views/portal/ResourceDetail.vue')
+        },
+        {
+          path: 'knowledge',
+          name: 'knowledge-base',
+          component: () => import('../views/portal/KnowledgeBase.vue')
         }
       ]
     },
@@ -58,6 +63,11 @@ const router = createRouter({
           path: 'materials/:category',
           name: 'materials',
           component: () => import('../views/MaterialManagement.vue')
+        },
+        {
+          path: 'knowledge',
+          name: 'admin-knowledge',
+          component: () => import('../views/portal/KnowledgeBase.vue')
         }
       ]
     }

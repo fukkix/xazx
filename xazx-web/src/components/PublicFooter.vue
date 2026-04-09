@@ -32,6 +32,7 @@
           <nav class="space-y-3">
             <router-link to="/portal" class="block text-sm text-blue-200/60 hover:text-white transition-colors">首页</router-link>
             <router-link to="/portal/resources" class="block text-sm text-blue-200/60 hover:text-white transition-colors">资料中心</router-link>
+            <router-link to="/portal/knowledge" class="block text-sm text-blue-200/60 hover:text-white transition-colors">知识库</router-link>
             <router-link to="/login" class="block text-sm text-blue-200/60 hover:text-white transition-colors">管理后台</router-link>
           </nav>
         </div>

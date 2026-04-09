@@ -8,6 +8,7 @@ const isMobileMenuOpen = ref(false)
 const navLinks = [
   { label: '首页', to: '/portal' },
   { label: '资料中心', to: '/portal/resources' },
+  { label: '知识库', to: '/portal/knowledge' },
   { label: '关于我们', to: '#' }
 ]
 
