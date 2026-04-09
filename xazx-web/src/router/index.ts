@@ -75,6 +75,13 @@ const router = createRouter({
           component: () => import('../views/portal/KnowledgeBase.vue')
         }
       ]
+    },
+
+    // ── 404 Catch-All ──
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('../views/NotFound.vue')
     }
   ]
 })
