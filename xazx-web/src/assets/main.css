@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Design System: Architectural Curator ── */
+
+  /* Primary */
+  --color-primary: #255dad;
+  --color-primary-dim: #1151a0;
+  --color-primary-container: #d7e2ff;
+  --color-primary-fixed: #d7e2ff;
+  --color-primary-fixed-dim: #c1d5ff;
+  --color-on-primary: #f7f7ff;
+  --color-on-primary-container: #0f509f;
+  --color-on-primary-fixed: #003e81;
+  --color-on-primary-fixed-variant: #215aaa;
+  --color-inverse-primary: #73a3f8;
+
+  /* Secondary */
+  --color-secondary: #526074;
+  --color-secondary-dim: #465468;
+  --color-secondary-container: #d5e3fc;
+  --color-secondary-fixed: #d5e3fc;
+  --color-secondary-fixed-dim: #c7d5ed;
+  --color-on-secondary: #f8f8ff;
+  --color-on-secondary-container: #455367;
+  --color-on-secondary-fixed: #324053;
+  --color-on-secondary-fixed-variant: #4e5c71;
+
+  /* Tertiary */
+  --color-tertiary: #5e5c78;
+  --color-tertiary-dim: #52506b;
+  --color-tertiary-container: #dad6f7;
+  --color-tertiary-fixed: #dad6f7;
+  --color-tertiary-fixed-dim: #ccc9e9;
+  --color-on-tertiary: #fcf7ff;
+  --color-on-tertiary-container: #4b4a65;
+  --color-on-tertiary-fixed: #393751;
+  --color-on-tertiary-fixed-variant: #55536f;
+
+  /* Error */
+  --color-error: #9f403d;
+  --color-error-dim: #4e0309;
+  --color-error-container: #fe8983;
+  --color-on-error: #fff7f6;
+  --color-on-error-container: #752121;
+
+  /* Surface & Background */
+  --color-surface: #f8f9ff;
+  --color-surface-dim: #c4dcff;
+  --color-surface-bright: #f8f9ff;
+  --color-surface-tint: #255dad;
+  --color-surface-variant: #d2e4ff;
+  --color-surface-container: #e5eeff;
+  --color-surface-container-low: #eff4ff;
+  --color-surface-container-high: #dce9ff;
+  --color-surface-container-highest: #d2e4ff;
+  --color-surface-container-lowest: #ffffff;
+  --color-background: #f8f9ff;
+  --color-on-surface: #00345e;
+  --color-on-surface-variant: #26619d;
+  --color-on-background: #00345e;
+  --color-inverse-surface: #000f21;
+  --color-inverse-on-surface: #8e9eb7;
+
+  /* Outline */
+  --color-outline: #477dbb;
+  --color-outline-variant: #81b5f6;
+
+  /* Typography */
+  --font-headline: 'Manrope', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-label: 'Inter', sans-serif;
+  --font-manrope: 'Manrope', sans-serif;
+}
+
+body {
+  font-family: 'Manrope', 'Inter', sans-serif;
+  color: #00345e;
+  background-color: #faf8ff;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
