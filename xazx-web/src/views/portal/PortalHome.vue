@@ -247,6 +247,34 @@ const formatNumber = (n: number): string => {
       </div>
     </section>
 
+    <!-- ═══════════ Knowledge Base Promo ═══════════ -->
+    <section class="max-w-7xl mx-auto px-6 py-20">
+      <router-link
+        to="/portal/knowledge"
+        class="group block bg-gradient-to-r from-[#0d2d5e] to-[#1a4a8a] rounded-2xl p-10 md:p-14 relative overflow-hidden shadow-xl hover:shadow-2xl transition-shadow"
+      >
+        <div class="absolute inset-0 pointer-events-none">
+          <div class="absolute -top-10 -right-10 w-48 h-48 bg-white/5 rounded-full blur-2xl"></div>
+          <div class="absolute bottom-0 left-1/4 w-64 h-64 bg-white/[0.03] rounded-full blur-3xl"></div>
+        </div>
+        <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+          <div class="max-w-xl">
+            <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-blue-200 rounded-full text-xs font-bold uppercase tracking-wider mb-5">
+              <el-icon :size="12"><Opportunity /></el-icon>
+              即将上线
+            </div>
+            <h2 class="font-headline text-2xl md:text-3xl font-extrabold text-white tracking-tight mb-3">企业智能知识库</h2>
+            <p class="text-blue-200/70 leading-relaxed">基于 LLM 驱动的知识管理系统——自动整理、交叉索引、自然语言检索。让企业智慧持续沉淀、高效流转。</p>
+          </div>
+          <div class="shrink-0 flex items-center gap-3 px-7 py-4 bg-white/10 backdrop-blur-sm text-white font-bold rounded-xl group-hover:bg-white/20 transition-colors">
+            <el-icon :size="18"><Opportunity /></el-icon>
+            了解详情
+            <el-icon :size="14"><Right /></el-icon>
+          </div>
+        </div>
+      </router-link>
+    </section>
+
     <!-- ═══════════ CTA Section ═══════════ -->
     <section class="relative overflow-hidden py-24">
       <!-- Background Decor -->

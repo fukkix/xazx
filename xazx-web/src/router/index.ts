@@ -31,6 +31,11 @@ const router = createRouter({
           path: 'knowledge',
           name: 'knowledge-base',
           component: () => import('../views/portal/KnowledgeBase.vue')
+        },
+        {
+          path: 'about',
+          name: 'about-us',
+          component: () => import('../views/portal/AboutUs.vue')
         }
       ]
     },

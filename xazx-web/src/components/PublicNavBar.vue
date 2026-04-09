@@ -9,7 +9,7 @@ const navLinks = [
   { label: '首页', to: '/portal' },
   { label: '资料中心', to: '/portal/resources' },
   { label: '知识库', to: '/portal/knowledge' },
-  { label: '关于我们', to: '#' }
+  { label: '关于我们', to: '/portal/about' }
 ]
 
 const isActive = (path: string) => {
@@ -31,29 +31,21 @@ const isActive = (path: string) => {
 
       <!-- Center: Desktop Navigation Links -->
       <div class="hidden md:flex items-center gap-1">
-        <template v-for="link in navLinks" :key="link.to">
-          <router-link
-            v-if="link.to !== '#'"
-            :to="link.to"
-            class="relative px-4 py-2 text-sm font-semibold rounded-lg transition-all"
-            :class="isActive(link.to)
-              ? 'text-primary bg-primary/8'
-              : 'text-secondary hover:text-on-surface hover:bg-surface-container-low'"
-          >
-            {{ link.label }}
-            <span
-              v-if="isActive(link.to)"
-              class="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-primary rounded-full"
-            ></span>
-          </router-link>
-          <a
-            v-else
-            href="#"
-            class="px-4 py-2 text-sm font-semibold text-secondary hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-all"
-          >
-            {{ link.label }}
-          </a>
-        </template>
+        <router-link
+          v-for="link in navLinks"
+          :key="link.to"
+          :to="link.to"
+          class="relative px-4 py-2 text-sm font-semibold rounded-lg transition-all"
+          :class="isActive(link.to)
+            ? 'text-primary bg-primary/8'
+            : 'text-secondary hover:text-on-surface hover:bg-surface-container-low'"
+        >
+          {{ link.label }}
+          <span
+            v-if="isActive(link.to)"
+            class="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-primary rounded-full"
+          ></span>
+        </router-link>
       </div>
 
       <!-- Right: Admin Portal Button + Mobile Menu Toggle -->
@@ -91,22 +83,18 @@ const isActive = (path: string) => {
         v-if="isMobileMenuOpen"
         class="md:hidden absolute top-16 inset-x-0 bg-white/95 backdrop-blur-xl shadow-xl border-t border-surface-container-high/30 p-4 space-y-1"
       >
-        <template v-for="link in navLinks" :key="link.to">
-          <router-link
-            v-if="link.to !== '#'"
-            :to="link.to"
-            class="block px-4 py-3 rounded-lg text-sm font-semibold transition-colors"
-            :class="isActive(link.to)
-              ? 'text-primary bg-primary/8'
-              : 'text-secondary hover:text-on-surface hover:bg-surface-container-low'"
-            @click="isMobileMenuOpen = false"
-          >
-            {{ link.label }}
-          </router-link>
-          <a v-else href="#" class="block px-4 py-3 rounded-lg text-sm font-semibold text-secondary hover:text-on-surface hover:bg-surface-container-low">
-            {{ link.label }}
-          </a>
-        </template>
+        <router-link
+          v-for="link in navLinks"
+          :key="link.to"
+          :to="link.to"
+          class="block px-4 py-3 rounded-lg text-sm font-semibold transition-colors"
+          :class="isActive(link.to)
+            ? 'text-primary bg-primary/8'
+            : 'text-secondary hover:text-on-surface hover:bg-surface-container-low'"
+          @click="isMobileMenuOpen = false"
+        >
+          {{ link.label }}
+        </router-link>
         <div class="pt-2 border-t border-surface-container-high/30 mt-2">
           <router-link
             to="/login"

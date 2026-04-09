@@ -9,6 +9,7 @@
 | 🔐 登录系统 | 角色鉴权（超管 / 管理员 / 普通用户） |
 | 📊 管理后台 | 仪表盘、账号管理、资料库管理（文档 / 图片 / PPT） |
 | 🌐 前台门户 | 首页展示、资料中心检索、资源详情与下载 |
+| 🧠 知识库 | LLM 驱动的企业知识管理系统（规划中） |
 
 ## 技术栈
 
@@ -44,23 +45,27 @@ npm run dev
 | `/portal` | 前台首页 |
 | `/portal/resources` | 资料中心 |
 | `/portal/resources/:id` | 资源详情 |
+| `/portal/knowledge` | 知识库（即将上线） |
+| `/portal/about` | 关于我们 |
 | `/login` | 登录页 |
 | `/` | 管理后台（需登录） |
+| `/knowledge` | 后台知识库入口（需登录） |
 
 ## 项目结构
 
 ```
 xazxplatform/
 ├── demo/                  # 设计稿参考 (HTML + 截图 + 设计规范)
+├── product-introduction/  # 产品介绍资料 & 知识库源文件
 ├── xazx-web/              # 主工程
 │   └── src/
-│       ├── assets/        # 全局样式 & 设计系统
-│       ├── components/    # 公共组件
+│       ├── assets/        # 全局样式 & 设计系统 (@theme)
+│       ├── components/    # 公共组件 (NavBar, Footer, Upload)
 │       ├── router/        # 路由配置
 │       ├── stores/        # Pinia 状态管理
 │       └── views/         # 页面视图
 │           └── portal/    # 前台展示页面
-└── product-introduction/  # 产品介绍资料 (预留)
+└── README.md
 ```
 
 ## License
