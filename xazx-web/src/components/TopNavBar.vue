@@ -38,7 +38,10 @@ const isActive = (link: any) => {
 <template>
   <nav class="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl shadow-sm dark:shadow-none h-16 flex justify-between items-center px-8 border-b border-surface-container-high/50">
     <div class="flex items-center gap-8">
-      <span class="text-2xl font-black text-blue-900 dark:text-blue-100">资源管理中心</span>
+      <div class="flex items-center gap-3">
+        <img src="@/assets/xazxpflogo.svg" class="h-8 object-contain" alt="Logo" />
+        <span class="text-2xl font-black text-blue-900 dark:text-blue-100">资源管理中心</span>
+      </div>
       <div class="hidden md:flex gap-1">
         <router-link
           v-for="link in adminLinks"

@@ -23,10 +23,8 @@ const isActive = (path: string) => {
     <div class="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
       <!-- Left: Brand -->
       <router-link to="/portal" class="flex items-center gap-3 group">
-        <div class="w-9 h-9 bg-gradient-to-br from-primary to-primary-dim rounded-xl flex items-center justify-center shadow-md shadow-primary/20 group-hover:shadow-lg group-hover:shadow-primary/30 transition-shadow">
-          <el-icon :size="18" color="white"><Grid /></el-icon>
-        </div>
-        <span class="font-headline font-extrabold text-lg tracking-tight text-on-surface hidden sm:block">企业资料展示平台</span>
+        <img src="@/assets/xazxpflogo.svg" class="h-9 object-contain" alt="Logo" />
+        <span class="font-headline font-extrabold text-lg tracking-tight text-on-surface hidden sm:block">信安在线资料平台</span>
       </router-link>
 
       <!-- Center: Desktop Navigation Links -->

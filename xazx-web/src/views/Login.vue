@@ -36,10 +36,8 @@ const handleLogin = () => {
         <div class="hidden md:flex flex-col justify-between p-12 bg-surface-container-low border-r border-outline-variant/15 relative overflow-hidden">
           <div class="relative z-10">
             <div class="flex items-center gap-3 mb-12">
-              <div class="w-10 h-10 bg-gradient-to-br from-primary to-primary-dim rounded-xl flex items-center justify-center">
-                <el-icon :size="24" color="white"><Grid /></el-icon>
-              </div>
-              <span class="font-headline font-extrabold text-2xl tracking-tight text-on-surface">企业资料展示平台</span>
+              <img src="@/assets/xazxpflogo.svg" class="h-10 object-contain" alt="Logo" />
+              <span class="font-headline font-extrabold text-2xl tracking-tight text-on-surface">信安在线资料平台</span>
             </div>
             
             <div class="space-y-6">
@@ -52,14 +50,7 @@ const handleLogin = () => {
             </div>
           </div>
           
-          <div class="relative z-10 mt-12 flex items-center gap-4 p-4 rounded-xl bg-surface-container/70 backdrop-blur-md border border-outline-variant/10">
-            <div class="flex -space-x-3">
-              <div class="w-10 h-10 rounded-full border-2 border-surface bg-gray-300 flex items-center justify-center"><el-icon><User /></el-icon></div>
-              <div class="w-10 h-10 rounded-full border-2 border-surface bg-gray-400 flex items-center justify-center"><el-icon><User /></el-icon></div>
-              <div class="w-10 h-10 rounded-full border-2 border-surface bg-gray-500 flex items-center justify-center"><el-icon><User /></el-icon></div>
-            </div>
-            <p class="text-xs font-medium text-on-surface-variant">已被 500+ <br/>企业架构师及负责人信赖</p>
-          </div>
+
           <div class="absolute -bottom-20 -left-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl"></div>
         </div>
 
@@ -81,15 +72,16 @@ const handleLogin = () => {
             
             <!-- Employee ID / Email -->
             <div class="space-y-2">
-              <label for="identifier" class="block text-xs font-bold tracking-wider text-on-surface-variant uppercase">员工工号 或 邮箱</label>
-              <div class="relative group">
-                <el-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-secondary group-focus-within:text-primary transition-colors"><User /></el-icon>
+              <label for="identifier" class="flex items-center gap-1 text-xs font-bold tracking-wider text-on-surface-variant uppercase">
+                <el-icon class="text-base"><User /></el-icon>账号
+              </label>
+              <div class="relative group mt-1">
                 <input 
                   type="text" 
                   id="identifier" 
                   v-model="identifier"
                   placeholder="如: super 或 admin" 
-                  class="w-full pl-8 py-3 bg-transparent border-0 border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 text-on-surface placeholder:text-secondary/50 font-medium transition-all"
+                  class="w-full pl-2 py-3 bg-transparent border-0 border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 text-on-surface placeholder:text-secondary/50 font-medium transition-all"
                 >
               </div>
             </div>
@@ -97,17 +89,18 @@ const handleLogin = () => {
             <!-- Password -->
             <div class="space-y-2">
               <div class="flex justify-between items-center">
-                <label for="password" class="block text-xs font-bold tracking-wider text-on-surface-variant uppercase">登录密码</label>
-                <a href="#" class="text-xs font-semibold text-primary hover:text-primary-dim transition-colors">忘记密码？</a>
+                <label for="password" class="flex items-center gap-1 text-xs font-bold tracking-wider text-on-surface-variant uppercase">
+                  <el-icon class="text-base"><Lock /></el-icon>登录密码
+                </label>
+                <a href="#" v-if="false" class="text-xs font-semibold text-primary hover:text-primary-dim transition-colors">忘记密码？</a>
               </div>
-              <div class="relative group">
-                <el-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-secondary group-focus-within:text-primary transition-colors"><Lock /></el-icon>
+              <div class="relative group mt-1">
                 <input 
                   type="password" 
                   id="password" 
                   v-model="password"
                   placeholder="••••••••" 
-                  class="w-full pl-8 py-3 bg-transparent border-0 border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 text-on-surface placeholder:text-secondary/50 font-medium transition-all"
+                  class="w-full pl-2 py-3 bg-transparent border-0 border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 text-on-surface placeholder:text-secondary/50 font-medium transition-all"
                 >
               </div>
             </div>

@@ -14,9 +14,9 @@
       <div class="relative z-10 max-w-4xl mx-auto px-6 text-center">
         <span class="text-xs font-bold uppercase tracking-[0.2em] text-primary mb-4 block">About Us</span>
         <h1 class="font-headline text-3xl md:text-5xl font-extrabold text-on-surface tracking-tight mb-6 leading-[1.15]">
-          让企业资源管理
+          让安全更智能
           <br>
-          <span class="bg-gradient-to-r from-primary to-[#3b82f6] bg-clip-text text-transparent">更智能、更高效</span>
+          <span class="bg-gradient-to-r from-primary to-[#3b82f6] bg-clip-text text-transparent">让智能更安全</span>
         </h1>
         <p class="text-secondary text-lg max-w-2xl mx-auto leading-relaxed">
           我们致力于构建企业级资源管理解决方案，帮助组织高效管理产品文档、设计素材与宣发材料，释放团队创造力。

@@ -16,10 +16,8 @@
         <!-- Brand Column -->
         <div class="space-y-5">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-gradient-to-br from-primary to-[#3b82f6] rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
-              <el-icon :size="22" color="white"><Grid /></el-icon>
-            </div>
-            <span class="font-headline font-extrabold text-xl tracking-tight">企业资料展示平台</span>
+            <img src="@/assets/xazxpflogo.svg" class="h-10 object-contain" alt="Logo" />
+            <span class="font-headline font-extrabold text-xl tracking-tight">信安在线资料平台</span>
           </div>
           <p class="text-blue-200/70 text-sm leading-relaxed max-w-xs">
             汇聚公司产品文档、设计素材与宣发PPT。<br>安全、高效、极简的企业资源管理门户。
