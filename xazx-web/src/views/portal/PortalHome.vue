@@ -259,16 +259,16 @@ const formatNumber = (n: number): string => {
         </div>
         <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
           <div class="max-w-xl">
-            <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-blue-200 rounded-full text-xs font-bold uppercase tracking-wider mb-5">
+            <div class="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/20 text-blue-100 rounded-full text-xs font-bold uppercase tracking-wider mb-5">
               <el-icon :size="12"><Opportunity /></el-icon>
-              即将上线
+              新增功能
             </div>
             <h2 class="font-headline text-2xl md:text-3xl font-extrabold text-white tracking-tight mb-3">企业智能知识库</h2>
             <p class="text-blue-200/70 leading-relaxed">基于 LLM 驱动的知识管理系统——自动整理、交叉索引、自然语言检索。让企业智慧持续沉淀、高效流转。</p>
           </div>
           <div class="shrink-0 flex items-center gap-3 px-7 py-4 bg-white/10 backdrop-blur-sm text-white font-bold rounded-xl group-hover:bg-white/20 transition-colors">
             <el-icon :size="18"><Opportunity /></el-icon>
-            了解详情
+            立即使用
             <el-icon :size="14"><Right /></el-icon>
           </div>
         </div>
