@@ -72,7 +72,7 @@ const router = createRouter({
         {
           path: 'knowledge',
           name: 'admin-knowledge',
-          component: () => import('../views/portal/KnowledgeBase.vue')
+          component: () => import('../views/AdminKnowledge.vue')
         }
       ]
     },
