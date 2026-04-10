@@ -85,7 +85,7 @@ const isActive = (path: string) => {
           v-for="link in navLinks"
           :key="link.to"
           :to="link.to"
-          class="block px-4 py-3 rounded-lg text-sm font-semibold transition-colors"
+          class="block px-4 py-4 rounded-lg text-sm font-semibold transition-colors"
           :class="isActive(link.to)
             ? 'text-primary bg-primary/8'
             : 'text-secondary hover:text-on-surface hover:bg-surface-container-low'"

@@ -52,11 +52,11 @@ const handleShare = () => {
     <!-- ═══════════ Breadcrumb ═══════════ -->
     <div class="bg-surface-container-low">
       <div class="max-w-7xl mx-auto px-6 py-4">
-        <nav class="flex items-center gap-2 text-sm text-secondary">
-          <router-link to="/portal/resources" class="hover:text-primary transition-colors font-medium">资料中心</router-link>
-          <el-icon :size="12" class="text-on-surface-variant/40"><Right /></el-icon>
-          <span class="text-on-surface-variant font-medium">{{ typeLabels[resource.type] }}</span>
-          <el-icon :size="12" class="text-on-surface-variant/40"><Right /></el-icon>
+        <nav class="flex items-center gap-2 text-sm text-secondary overflow-x-auto whitespace-nowrap no-scrollbar pb-1">
+          <router-link to="/portal/resources" class="shrink-0 hover:text-primary transition-colors font-medium">资料中心</router-link>
+          <el-icon :size="12" class="shrink-0 text-on-surface-variant/40"><Right /></el-icon>
+          <span class="shrink-0 text-on-surface-variant font-medium">{{ typeLabels[resource.type] }}</span>
+          <el-icon :size="12" class="shrink-0 text-on-surface-variant/40"><Right /></el-icon>
           <span class="text-on-surface font-semibold truncate max-w-[200px]">{{ resource.name }}</span>
         </nav>
       </div>
@@ -228,5 +228,12 @@ const handleShare = () => {
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 </style>

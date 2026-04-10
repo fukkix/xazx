@@ -97,7 +97,7 @@ const formatNumber = (n: number): string => {
             v-model="searchInput"
             type="text"
             placeholder="搜索资源名称、描述或标签..."
-            class="w-full pl-14 pr-32 py-4 bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,52,94,0.06)] text-on-surface placeholder:text-secondary/50 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            class="w-full pl-12 sm:pl-14 pr-[80px] sm:pr-32 py-4 bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,52,94,0.06)] text-on-surface placeholder:text-secondary/50 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm sm:text-base"
             @keyup.enter="onSearch"
           >
           <div class="absolute right-3 top-1/2 -translate-y-1/2 flex gap-2">
@@ -110,7 +110,7 @@ const formatNumber = (n: number): string => {
             </button>
             <button
               @click="onSearch"
-              class="px-6 py-2.5 bg-gradient-to-br from-primary to-primary-dim text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-primary/20 active:scale-[0.97] transition-all"
+              class="px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-br from-primary to-primary-dim text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-primary/20 active:scale-[0.97] transition-all whitespace-nowrap"
             >
               搜索
             </button>
@@ -122,12 +122,12 @@ const formatNumber = (n: number): string => {
     <!-- ═══════════ Content Area ═══════════ -->
     <section class="max-w-7xl mx-auto px-6 py-12">
       <!-- Category Filter Chips -->
-      <div class="flex flex-wrap items-center gap-2 mb-10">
+      <div class="flex flex-nowrap sm:flex-wrap items-center gap-2 mb-10 overflow-x-auto no-scrollbar pb-2 sm:pb-0">
         <button
           v-for="cat in categories"
           :key="cat.value"
           @click="onCategoryChange(cat.value)"
-          class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200"
+          class="shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200"
           :class="store.activeCategory === cat.value
             ? 'bg-primary text-on-primary shadow-md shadow-primary/20'
             : 'bg-surface-container-low text-secondary hover:bg-surface-container-high hover:text-on-surface'"
@@ -137,7 +137,7 @@ const formatNumber = (n: number): string => {
             {{ cat.label }}
           </span>
         </button>
-        <span class="ml-auto text-xs font-bold text-on-surface-variant uppercase tracking-[0.1em]">
+        <span class="ml-auto text-xs font-bold text-on-surface-variant uppercase tracking-[0.1em] shrink-0">
           共 {{ store.filteredMaterials.length }} 项资源
         </span>
       </div>
@@ -229,5 +229,14 @@ const formatNumber = (n: number): string => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Hide scrollbar for category swiping */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 </style>

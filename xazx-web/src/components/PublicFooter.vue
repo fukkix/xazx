@@ -12,7 +12,7 @@
 
     <div class="relative z-10 max-w-7xl mx-auto px-8">
       <!-- Main Footer Content -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-12 py-16 border-b border-white/10">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 py-12 md:py-16 border-b border-white/10">
         <!-- Brand Column -->
         <div class="space-y-5">
           <div class="flex items-center gap-3">
@@ -47,8 +47,8 @@
       </div>
 
       <!-- Copyright Bar -->
-      <div class="py-6 flex flex-col md:flex-row justify-between items-center gap-4">
-        <span class="text-xs text-blue-300/50 font-medium tracking-wider uppercase">
+      <div class="py-6 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+        <span class="text-xs text-blue-300/50 font-medium tracking-wider uppercase leading-relaxed">
           © 2026 Enterprise Resource Platform. All rights reserved.
         </span>
         <span class="text-xs text-blue-300/40">

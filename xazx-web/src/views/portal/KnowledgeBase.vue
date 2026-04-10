@@ -77,12 +77,12 @@ onMounted(async () => {
             v-model="searchQuery"
             type="text"
             placeholder="用自然语言搜索知识库内容..."
-            class="w-full pl-14 pr-36 py-4 bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,52,94,0.06)] text-on-surface placeholder:text-secondary/40 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            class="w-full pl-12 sm:pl-14 pr-[100px] sm:pr-36 py-4 bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,52,94,0.06)] text-on-surface placeholder:text-secondary/40 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm sm:text-base"
             @keyup.enter="handleSearch"
           >
           <button
             :disabled="isSearching || !searchQuery.trim()"
-            class="absolute right-3 top-1/2 -translate-y-1/2 px-6 py-2.5 bg-gradient-to-br from-tertiary to-tertiary-dim text-on-tertiary text-sm font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            class="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-br from-tertiary to-tertiary-dim text-on-tertiary text-sm font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all whitespace-nowrap"
             @click="handleSearch"
           >
             {{ isSearching ? '检索中...' : '智能检索' }}

@@ -59,7 +59,7 @@ const formatNumber = (n: number): string => {
 <template>
   <div>
     <!-- ═══════════ Hero Section ═══════════ -->
-    <section class="relative overflow-hidden bg-surface py-24 md:py-32 lg:py-40">
+    <section class="relative overflow-hidden bg-surface py-16 md:py-32 lg:py-40">
       <!-- Decorative background orbs -->
       <div class="absolute inset-0 pointer-events-none">
         <div class="absolute -top-[15%] -left-[8%] w-[55%] h-[55%] rounded-full bg-primary/[0.04] blur-[120px]"></div>
@@ -88,17 +88,17 @@ const formatNumber = (n: number): string => {
           </p>
 
           <!-- CTA Buttons -->
-          <div class="flex flex-wrap gap-4">
+          <div class="flex flex-col sm:flex-row gap-4">
             <router-link
               to="/portal/resources"
-              class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-br from-primary to-primary-dim text-on-primary font-bold text-base rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-[0.97] transition-all"
+              class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-br from-primary to-primary-dim text-on-primary font-bold text-base rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-[0.97] transition-all"
             >
               浏览资料中心
               <el-icon><Right /></el-icon>
             </router-link>
             <router-link
               to="/login"
-              class="inline-flex items-center gap-2 px-8 py-4 bg-surface-container-low text-primary font-bold text-base rounded-xl hover:bg-surface-container-high transition-all"
+              class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-surface-container-low text-primary font-bold text-base rounded-xl hover:bg-surface-container-high transition-all"
             >
               <el-icon><Monitor /></el-icon>
               管理后台
@@ -109,7 +109,7 @@ const formatNumber = (n: number): string => {
     </section>
 
     <!-- ═══════════ Stats Bar ═══════════ -->
-    <section class="relative z-10 max-w-7xl mx-auto px-6 -mt-8">
+    <section class="relative z-10 max-w-7xl mx-auto px-6 mt-0 md:-mt-8">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Total Resources -->
         <div class="bg-surface-container-lowest rounded-2xl p-8 shadow-[0_8px_30px_rgba(0,52,94,0.06)] hover:shadow-[0_12px_40px_rgba(0,52,94,0.1)] transition-shadow">
@@ -291,7 +291,7 @@ const formatNumber = (n: number): string => {
         </p>
         <router-link
           to="/login"
-          class="inline-flex items-center gap-2 px-10 py-4 bg-gradient-to-br from-primary to-primary-dim text-on-primary font-bold text-base rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-[0.97] transition-all"
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-10 py-4 bg-gradient-to-br from-primary to-primary-dim text-on-primary font-bold text-base rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-[0.97] transition-all"
         >
           <el-icon><Monitor /></el-icon>
           进入管理后台

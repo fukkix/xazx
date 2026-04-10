@@ -5,7 +5,7 @@
 <template>
   <div>
     <!-- ═══════════ Hero ═══════════ -->
-    <section class="relative overflow-hidden bg-surface-container-low py-20 md:py-28">
+    <section class="relative overflow-hidden bg-surface-container-low py-16 md:py-28">
       <div class="absolute inset-0 pointer-events-none">
         <div class="absolute -top-[15%] -left-[8%] w-[50%] h-[50%] rounded-full bg-primary/[0.04] blur-[120px]"></div>
         <div class="absolute bottom-[5%] right-[10%] w-[35%] h-[35%] rounded-full bg-tertiary/[0.03] blur-[80px]"></div>
@@ -92,17 +92,17 @@
       <div class="max-w-3xl mx-auto px-6 text-center">
         <h2 class="font-headline text-2xl font-extrabold text-on-surface tracking-tight mb-4">联系我们</h2>
         <p class="text-secondary mb-8 max-w-md mx-auto">如需了解更多平台功能或洽谈企业合作，欢迎随时联系我们的团队。</p>
-        <div class="flex flex-wrap justify-center gap-4">
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
           <a
             href="mailto:contact@enterprise.com"
-            class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-br from-primary to-primary-dim text-on-primary font-bold rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-[0.97] transition-all"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-br from-primary to-primary-dim text-on-primary font-bold rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-[0.97] transition-all"
           >
             <el-icon><Message /></el-icon>
             发送邮件
           </a>
           <router-link
             to="/portal/resources"
-            class="inline-flex items-center gap-2 px-8 py-4 bg-surface-container-low text-primary font-bold rounded-xl hover:bg-surface-container-high transition-all"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-surface-container-low text-primary font-bold rounded-xl hover:bg-surface-container-high transition-all"
           >
             <el-icon><Box /></el-icon>
             浏览资料中心
