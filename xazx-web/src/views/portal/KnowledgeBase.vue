@@ -1,53 +1,152 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { knowledgeApi } from '../../services/knowledge'
+import { ref, onMounted, computed } from 'vue'
+import { knowledgeApi, type SearchResponse } from '../../services/knowledge'
+import { ElMessage } from 'element-plus'
+
+// ============ 状态管理 ============
 
 const searchQuery = ref('')
 const isSearching = ref(false)
-const searchResult = ref<{ answer: string; sources: any[] } | null>(null)
-const statsLoaded = ref(false)
+const searchResult = ref<SearchResponse | null>(null)
+const searchError = ref('')
+
+// 知识域映射
+const domainKeyMap: Record<string, string> = {
+  '产品知识': 'product',
+  '技术文档': 'tech',
+  '销售支持': 'sales',
+  '行业合规': 'compliance',
+  '内部运营': 'ops'
+}
 
 const categories = ref([
-  { icon: 'Box', key: 'product', label: '产品知识库', count: 0, description: '各产品功能介绍、核心卖点、适用场景（WAF、动态防御、全流量分析等）', audience: '全员' },
-  { icon: 'SetUp', key: 'tech', label: '技术文档库', count: 0, description: '部署架构、配置手册、API 文档、排障指南', audience: '研发 / 实施 / 售后' },
-  { icon: 'Connection', key: 'sales', label: '销售支持库', count: 0, description: '竞品对比、客户案例、购买驱动力分析', audience: '销售 / 售前' },
-  { icon: 'Reading', key: 'compliance', label: '行业合规库', count: 0, description: '等保 2.0、网络安全法、行业监管要求', audience: '售前 / 销售' },
-  { icon: 'Notebook', key: 'ops', label: '内部运营库', count: 0, description: '实施规范、验收模板、售后 FAQ、流程 SOP', audience: '全员' }
+  { 
+    icon: 'Box', 
+    key: 'product', 
+    domain: '产品知识',
+    label: '产品知识库', 
+    count: 0, 
+    description: '各产品功能介绍、核心卖点、适用场景（WAF、动态防御、全流量分析等）', 
+    audience: '全员' 
+  },
+  { 
+    icon: 'SetUp', 
+    key: 'tech', 
+    domain: '技术文档',
+    label: '技术文档库', 
+    count: 0, 
+    description: '部署架构、配置手册、API 文档、排障指南', 
+    audience: '研发 / 实施 / 售后' 
+  },
+  { 
+    icon: 'Connection', 
+    key: 'sales', 
+    domain: '销售支持',
+    label: '销售支持库', 
+    count: 0, 
+    description: '竞品对比、客户案例、购买驱动力分析', 
+    audience: '销售 / 售前' 
+  },
+  { 
+    icon: 'Reading', 
+    key: 'compliance', 
+    domain: '行业合规',
+    label: '行业合规库', 
+    count: 0, 
+    description: '等保 2.0、网络安全法、行业监管要求', 
+    audience: '售前 / 销售' 
+  },
+  { 
+    icon: 'Notebook', 
+    key: 'ops', 
+    domain: '内部运营',
+    label: '内部运营库', 
+    count: 0, 
+    description: '实施规范、验收模板、售后 FAQ、流程 SOP', 
+    audience: '全员' 
+  }
 ])
 
 const recentEntries = ref([
-  { title: 'WAF 产品概述', domain: '产品知识库', date: '2026-04-09', status: 'published' },
-  { title: 'Web 应用防护系统白皮书', domain: '产品知识库', date: '2026-04-09', status: 'published' },
+  { title: 'WAF 产品概述', domain: '产品知识', date: '2026-04-09', status: 'published' },
+  { title: 'Web 应用防护系统白皮书', domain: '产品知识', date: '2026-04-09', status: 'published' },
   { title: '更多文档入库中...', domain: '', date: '', status: 'coming' }
 ])
 
+// ============ 计算属性 ============
+
+const totalPages = computed(() => {
+  return categories.value.reduce((sum, cat) => sum + cat.count, 0)
+})
+
+// ============ 方法 ============
+
+/**
+ * 执行搜索
+ */
 const handleSearch = async () => {
-  if (!searchQuery.value.trim()) return
+  if (!searchQuery.value.trim()) {
+    ElMessage.warning('请输入搜索内容')
+    return
+  }
+
   isSearching.value = true
   searchResult.value = null
+  searchError.value = ''
+
   try {
-    const res = await knowledgeApi.search({ query: searchQuery.value })
-    searchResult.value = res
-  } catch {
-    // 后端未启动时给出友好提示
-    searchResult.value = { answer: '知识库检索服务暂未就绪，请稍后再试。', sources: [] }
+    const result = await knowledgeApi.search({ 
+      query: searchQuery.value.trim(),
+      size: 5
+    })
+    
+    searchResult.value = result
+    
+    // 如果是降级结果，显示提示
+    if (result.degraded) {
+      ElMessage.info('LLM 响应超时，使用关键词匹配生成答案')
+    }
+  } catch (error: any) {
+    console.error('搜索失败:', error)
+    searchError.value = error.message || '搜索失败，请稍后重试'
+    ElMessage.error(searchError.value)
   } finally {
     isSearching.value = false
   }
 }
 
-onMounted(async () => {
+/**
+ * 加载统计信息
+ */
+const loadStats = async () => {
   try {
     const stats = await knowledgeApi.getStats()
-    const domainMap: Record<string, number> = {}
-    stats.domains.forEach(d => { domainMap[d.domain] = d.page_count })
+    
+    // 更新各知识域的页面数量
     categories.value.forEach(cat => {
-      cat.count = domainMap[cat.key] ?? 0
+      const domainStats = stats.domains[cat.domain]
+      if (domainStats) {
+        cat.count = domainStats.total
+      }
     })
-    statsLoaded.value = true
-  } catch {
-    // 后端未启动，保持 count=0
+  } catch (error) {
+    console.error('加载统计信息失败:', error)
+    // 静默失败，保持 count=0
   }
+}
+
+/**
+ * 清空搜索结果
+ */
+const clearSearch = () => {
+  searchResult.value = null
+  searchError.value = ''
+}
+
+// ============ 生命周期 ============
+
+onMounted(() => {
+  loadStats()
 })
 </script>
 
@@ -91,11 +190,48 @@ onMounted(async () => {
 
         <!-- Search Result -->
         <div v-if="searchResult" class="mt-6 max-w-2xl mx-auto text-left bg-surface-container-lowest rounded-2xl p-6 shadow-md">
-          <p class="text-on-surface text-sm leading-relaxed mb-3">{{ searchResult.answer }}</p>
-          <div v-if="searchResult.sources.length" class="space-y-1">
-            <span class="text-xs font-bold text-secondary uppercase tracking-wider">来源</span>
-            <div v-for="src in searchResult.sources" :key="src.path" class="text-xs text-primary hover:underline cursor-pointer">
-              {{ src.title }} · {{ src.domain }}
+          <!-- Degraded Badge -->
+          <div v-if="searchResult.degraded" class="mb-3 inline-flex items-center gap-2 px-3 py-1 bg-yellow-50 text-yellow-700 rounded-lg text-xs">
+            <el-icon :size="14"><Warning /></el-icon>
+            <span>LLM 超时，使用关键词匹配</span>
+          </div>
+          
+          <!-- Answer -->
+          <div class="mb-4">
+            <p class="text-on-surface text-sm leading-relaxed whitespace-pre-wrap">{{ searchResult.answer }}</p>
+          </div>
+          
+          <!-- Sources -->
+          <div v-if="searchResult.sources.length" class="space-y-2 border-t border-outline-variant pt-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-secondary uppercase tracking-wider">来源 ({{ searchResult.sources.length }})</span>
+              <span class="text-xs text-secondary">共找到 {{ searchResult.total }} 个相关页面</span>
+            </div>
+            <div v-for="src in searchResult.sources" :key="src.path" class="group">
+              <div class="text-sm font-medium text-primary hover:underline cursor-pointer">
+                {{ src.title }}
+              </div>
+              <div class="text-xs text-secondary mt-0.5">{{ src.summary }}</div>
+              <div class="text-[10px] text-on-surface-variant mt-0.5">{{ src.path }}</div>
+            </div>
+          </div>
+          
+          <!-- Clear Button -->
+          <button
+            @click="clearSearch"
+            class="mt-4 text-xs text-secondary hover:text-primary transition-colors"
+          >
+            清空结果
+          </button>
+        </div>
+        
+        <!-- Error Message -->
+        <div v-if="searchError" class="mt-6 max-w-2xl mx-auto text-left bg-red-50 rounded-2xl p-4 shadow-md">
+          <div class="flex items-start gap-3">
+            <el-icon :size="20" class="text-red-600 flex-shrink-0 mt-0.5"><CircleClose /></el-icon>
+            <div>
+              <p class="text-sm font-medium text-red-900 mb-1">搜索失败</p>
+              <p class="text-xs text-red-700">{{ searchError }}</p>
             </div>
           </div>
         </div>
