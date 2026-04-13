@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { knowledgeApi, type SearchResponse } from '../../services/knowledge'
 import { ElMessage } from 'element-plus'
 
@@ -9,6 +9,10 @@ const searchQuery = ref('')
 const isSearching = ref(false)
 const searchResult = ref<SearchResponse | null>(null)
 const searchError = ref('')
+
+// 搜索防抖定时器
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
+const DEBOUNCE_MS = 300
 
 // 知识域映射
 const domainKeyMap: Record<string, string> = {
@@ -82,12 +86,27 @@ const totalPages = computed(() => {
 // ============ 方法 ============
 
 /**
- * 执行搜索
+ * 防抖触发搜索（输入框 input 事件使用）
+ */
+const handleSearchDebounced = () => {
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+  searchDebounceTimer = setTimeout(() => {
+    if (searchQuery.value.trim()) handleSearch()
+  }, DEBOUNCE_MS)
+}
+
+/**
+ * 执行搜索（按钮点击 / Enter 直接触发，不防抖）
  */
 const handleSearch = async () => {
   if (!searchQuery.value.trim()) {
     ElMessage.warning('请输入搜索内容')
     return
+  }
+
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+    searchDebounceTimer = null
   }
 
   isSearching.value = true
@@ -102,14 +121,22 @@ const handleSearch = async () => {
     
     searchResult.value = result
     
-    // 如果是降级结果，显示提示
     if (result.degraded) {
-      ElMessage.info('LLM 响应超时，使用关键词匹配生成答案')
+      ElMessage.info('LLM 响应超时，已切换为关键词匹配')
     }
   } catch (error: any) {
     console.error('搜索失败:', error)
-    searchError.value = error.message || '搜索失败，请稍后重试'
-    ElMessage.error(searchError.value)
+    const raw = error.message as string
+    // 友好化错误信息
+    if (raw.includes('429')) {
+      searchError.value = '搜索请求过于频繁，请稍等片刻后重试'
+    } else if (raw.includes('500') || raw.includes('502') || raw.includes('503')) {
+      searchError.value = '知识库服务暂时不可用，请稍后重试'
+    } else if (raw.includes('Failed to fetch') || raw.includes('NetworkError')) {
+      searchError.value = '网络连接失败，请检查网络后重试'
+    } else {
+      searchError.value = raw || '搜索失败，请稍后重试'
+    }
   } finally {
     isSearching.value = false
   }
@@ -148,6 +175,10 @@ const clearSearch = () => {
 onMounted(() => {
   loadStats()
 })
+
+onUnmounted(() => {
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+})
 </script>
 
 <template>
@@ -177,6 +208,7 @@ onMounted(() => {
             type="text"
             placeholder="用自然语言搜索知识库内容..."
             class="w-full pl-12 sm:pl-14 pr-[100px] sm:pr-36 py-4 bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,52,94,0.06)] text-on-surface placeholder:text-secondary/40 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm sm:text-base"
+            @input="handleSearchDebounced"
             @keyup.enter="handleSearch"
           >
           <button
@@ -193,11 +225,18 @@ onMounted(() => {
           <!-- Degraded Badge -->
           <div v-if="searchResult.degraded" class="mb-3 inline-flex items-center gap-2 px-3 py-1 bg-yellow-50 text-yellow-700 rounded-lg text-xs">
             <el-icon :size="14"><Warning /></el-icon>
-            <span>LLM 超时，使用关键词匹配</span>
+            <span>LLM 超时，已切换关键词匹配 · 结果仅供参考</span>
+          </div>
+          
+          <!-- Empty State -->
+          <div v-if="!searchResult.answer || searchResult.total === 0" class="flex flex-col items-center gap-3 py-6 text-center">
+            <el-icon :size="40" class="text-secondary/40"><Search /></el-icon>
+            <p class="text-sm font-medium text-on-surface">未找到相关内容</p>
+            <p class="text-xs text-secondary">请尝试更换关键词，或联系管理员上传相关文档</p>
           </div>
           
           <!-- Answer -->
-          <div class="mb-4">
+          <div v-else class="mb-4">
             <p class="text-on-surface text-sm leading-relaxed whitespace-pre-wrap">{{ searchResult.answer }}</p>
           </div>
           
@@ -207,31 +246,34 @@ onMounted(() => {
               <span class="text-xs font-bold text-secondary uppercase tracking-wider">来源 ({{ searchResult.sources.length }})</span>
               <span class="text-xs text-secondary">共找到 {{ searchResult.total }} 个相关页面</span>
             </div>
-            <div v-for="src in searchResult.sources" :key="src.path" class="group">
-              <div class="text-sm font-medium text-primary hover:underline cursor-pointer">
-                {{ src.title }}
-              </div>
-              <div class="text-xs text-secondary mt-0.5">{{ src.summary }}</div>
-              <div class="text-[10px] text-on-surface-variant mt-0.5">{{ src.path }}</div>
+            <div v-for="src in searchResult.sources" :key="src.path" class="group py-1">
+              <div class="text-sm font-medium text-primary hover:underline cursor-pointer">{{ src.title }}</div>
+              <div class="text-xs text-secondary mt-0.5 line-clamp-2">{{ src.summary }}</div>
             </div>
           </div>
           
           <!-- Clear Button -->
-          <button
-            @click="clearSearch"
-            class="mt-4 text-xs text-secondary hover:text-primary transition-colors"
-          >
+          <button @click="clearSearch" class="mt-4 text-xs text-secondary hover:text-primary transition-colors">
             清空结果
           </button>
+        </div>
+
+        <!-- Loading Skeleton -->
+        <div v-if="isSearching" class="mt-6 max-w-2xl mx-auto bg-surface-container-lowest rounded-2xl p-6 shadow-md space-y-3 animate-pulse">
+          <div class="h-3 bg-surface-container-high rounded w-3/4"></div>
+          <div class="h-3 bg-surface-container-high rounded w-full"></div>
+          <div class="h-3 bg-surface-container-high rounded w-5/6"></div>
+          <div class="h-3 bg-surface-container-high rounded w-2/3 mt-4"></div>
         </div>
         
         <!-- Error Message -->
         <div v-if="searchError" class="mt-6 max-w-2xl mx-auto text-left bg-red-50 rounded-2xl p-4 shadow-md">
           <div class="flex items-start gap-3">
             <el-icon :size="20" class="text-red-600 flex-shrink-0 mt-0.5"><CircleClose /></el-icon>
-            <div>
+            <div class="flex-1">
               <p class="text-sm font-medium text-red-900 mb-1">搜索失败</p>
               <p class="text-xs text-red-700">{{ searchError }}</p>
+              <button @click="handleSearch" class="mt-2 text-xs text-red-600 font-semibold hover:underline">重新搜索</button>
             </div>
           </div>
         </div>

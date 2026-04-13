@@ -35,6 +35,14 @@ export interface IngestResponse {
   message: string
 }
 
+export interface BatchIngestResponse {
+  total: number
+  accepted: number
+  rejected: number
+  tasks: IngestResponse[]
+  errors: string[]
+}
+
 export interface TaskStatusResponse {
   task_id: string
   status: 'processing' | 'success' | 'error'
@@ -81,6 +89,21 @@ export interface LogsResponse {
   entries: LogEntry[]
 }
 
+// ============ 前端辅助类型 ============
+
+export interface TaskStatus {
+  task_id: string
+  status: string
+  progress?: string
+  error?: string
+  wiki_page?: string
+}
+
+export interface DomainStat {
+  domain: string
+  page_count: number
+}
+
 // ============ 辅助函数 ============
 
 async function request<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
@@ -119,6 +142,64 @@ export const knowledgeApi = {
     if (productLine) form.append('product_line', productLine)
     
     return request<IngestResponse>(`${BASE_URL}/api/knowledge/ingest`, {
+      method: 'POST',
+      body: form
+    })
+  },
+
+  /**
+   * 文档入库（带上传进度回调）
+   * @param onProgress 上传进度回调 (0-100)
+   */
+  ingestWithProgress(
+    file: File,
+    domain: string,
+    onProgress: (percent: number) => void,
+    productLine?: string
+  ): Promise<IngestResponse> {
+    return new Promise((resolve, reject) => {
+      const form = new FormData()
+      form.append('file', file)
+      form.append('domain', domain)
+      if (productLine) form.append('product_line', productLine)
+
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', `${BASE_URL}/api/knowledge/ingest`)
+
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          onProgress(Math.round((e.loaded / e.total) * 100))
+        }
+      })
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            resolve(JSON.parse(xhr.responseText) as IngestResponse)
+          } catch {
+            reject(new Error('响应解析失败'))
+          }
+        } else {
+          let msg = `${xhr.status}`
+          try { msg = JSON.parse(xhr.responseText).detail ?? msg } catch {}
+          reject(new Error(msg))
+        }
+      })
+
+      xhr.addEventListener('error', () => reject(new Error('网络错误，请检查连接后重试')))
+      xhr.addEventListener('timeout', () => reject(new Error('上传超时，请稍后重试')))
+      xhr.timeout = 120_000  // 2 分钟
+
+      xhr.send(form)
+    })
+  },
+  async batchIngest(files: File[], domain: string, productLine?: string): Promise<BatchIngestResponse> {
+    const form = new FormData()
+    files.forEach(f => form.append('files', f))
+    form.append('domain', domain)
+    if (productLine) form.append('product_line', productLine)
+
+    return request<BatchIngestResponse>(`${BASE_URL}/api/knowledge/batch-ingest`, {
       method: 'POST',
       body: form
     })

@@ -73,6 +73,10 @@ const handleUploadSubmit = () => {
         <a href="#" class="text-blue-200/70 hover:text-white px-4 py-2 flex items-center gap-3 font-manrope text-sm font-medium">
           <el-icon :size="18"><Help /></el-icon> 使用帮助
         </a>
+        <a href="http://localhost:5173" target="_blank" rel="noopener noreferrer" class="text-blue-200/70 hover:text-white px-4 py-2 flex items-center gap-3 font-manrope text-sm font-medium">
+          <el-icon :size="18"><DataLine /></el-icon> 甘特图工具
+          <el-icon :size="10" class="ml-auto opacity-40"><TopRight /></el-icon>
+        </a>
       </div>
     </div>
 

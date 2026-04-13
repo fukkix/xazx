@@ -33,8 +33,9 @@ const loadStats = async () => {
 
 // ── Upload / Ingest ─────────────────────────────────────
 const selectedDomain = ref('product')
-const selectedFile = ref<File | null>(null)
+const selectedFiles = ref<File[]>([])
 const uploading = ref(false)
+const uploadProgress = ref(0)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const domainOptions = [
@@ -47,33 +48,63 @@ const domainOptions = [
 
 const handleFileChange = (event: Event) => {
   const input = event.target as HTMLInputElement
-  selectedFile.value = input.files?.[0] ?? null
+  selectedFiles.value = input.files ? Array.from(input.files) : []
 }
 
 const handleIngest = async () => {
-  if (!selectedFile.value) {
+  if (selectedFiles.value.length === 0) {
     ElMessage.warning('请先选择文件')
     return
   }
   uploading.value = true
+  uploadProgress.value = 0
   try {
-    const res = await knowledgeApi.ingest(selectedFile.value, selectedDomain.value)
-    tasks.value.unshift({
-      task_id: res.task_id,
-      status: 'pending',
-      filename: selectedFile.value.name,
-      domain: selectedDomain.value,
-      startedAt: new Date().toLocaleTimeString()
-    })
-    selectedFile.value = null
+    const isSingle = selectedFiles.value.length === 1
+    if (selectedFiles.value.length === 1) {
+      // 单文件：带进度条
+      const file = selectedFiles.value[0]
+      const res = await knowledgeApi.ingestWithProgress(
+        file,
+        selectedDomain.value,
+        (pct) => { uploadProgress.value = pct }
+      )
+      tasks.value.unshift({
+        task_id: res.task_id,
+        status: 'pending',
+        filename: file.name,
+        domain: selectedDomain.value,
+        startedAt: new Date().toLocaleTimeString()
+      })
+      pollTask(res.task_id)
+    } else {
+      // 多文件走批量接口
+      const res = await knowledgeApi.batchIngest(selectedFiles.value, selectedDomain.value)
+      for (const t of res.tasks) {
+        const filename = t.message.replace('文档 ', '').replace(' 已开始入库处理', '')
+        tasks.value.unshift({
+          task_id: t.task_id,
+          status: 'pending',
+          filename,
+          domain: selectedDomain.value,
+          startedAt: new Date().toLocaleTimeString()
+        })
+        pollTask(t.task_id)
+      }
+      if (res.errors.length > 0) {
+        ElMessage.warning(`${res.accepted} 个文件已提交，${res.rejected} 个被拒绝：${res.errors.join('；')}`)
+      } else {
+        ElMessage.success(`${res.accepted} 个文件已全部提交`)
+      }
+    }
+    selectedFiles.value = []
     if (fileInputRef.value) fileInputRef.value.value = ''
-    ElMessage.success('文件已提交，正在入库处理...')
-    pollTask(res.task_id)
+    if (isSingle) ElMessage.success('文件已提交，正在入库处理...')
     loadStats()
   } catch (err: any) {
     ElMessage.error(`入库失败：${err.message}`)
   } finally {
     uploading.value = false
+    uploadProgress.value = 0
   }
 }
 
@@ -115,10 +146,12 @@ const pollTask = async (taskId: string) => {
 }
 
 const statusLabel: Record<string, string> = {
-  pending: '等待中',
-  running: '处理中',
-  success: '已完成',
-  failed:  '失败'
+  pending:    '等待中',
+  running:    '处理中',
+  processing: '处理中',
+  success:    '已完成',
+  failed:     '失败',
+  error:      '失败'
 }
 
 const statusColor: Record<string, string> = {
@@ -171,6 +204,7 @@ onMounted(() => {
           v-for="d in domainOptions"
           :key="d.value"
           class="bg-surface-container-lowest rounded-2xl p-5 shadow-[0_4px_20px_rgba(0,52,94,0.04)]"
+          :class="{ 'animate-pulse': statsLoading }"
         >
           <div class="flex items-center gap-2 mb-3">
             <div class="w-8 h-8 rounded-lg flex items-center justify-center" :class="domainMeta[d.value]?.color">
@@ -178,7 +212,8 @@ onMounted(() => {
             </div>
           </div>
           <div class="text-2xl font-black text-on-surface">
-            {{ statsLoading ? '–' : (domainStats.find(s => s.domain === d.value)?.page_count ?? 0) }}
+            <span v-if="statsLoading" class="inline-block w-8 h-6 bg-surface-container-high rounded"></span>
+            <span v-else>{{ domainStats.find(s => s.domain === d.value)?.page_count ?? 0 }}</span>
           </div>
           <div class="text-xs text-secondary mt-1">{{ d.label }}</div>
         </div>
@@ -212,13 +247,14 @@ onMounted(() => {
           >
             <el-icon class="text-secondary" :size="20"><UploadFilled /></el-icon>
             <span class="text-sm text-secondary truncate">
-              {{ selectedFile ? selectedFile.name : '点击选择 PDF / DOCX / PPTX / 图片' }}
+              {{ selectedFiles.length > 1 ? `已选择 ${selectedFiles.length} 个文件` : selectedFiles.length === 1 ? selectedFiles[0].name : '点击选择文件（可多选）' }}
             </span>
             <input
               ref="fileInputRef"
               type="file"
               accept=".pdf,.docx,.doc,.pptx,.ppt,.png,.jpg,.jpeg,.webp"
               class="hidden"
+              multiple
               @change="handleFileChange"
             >
           </div>
@@ -227,7 +263,7 @@ onMounted(() => {
         <!-- Submit Button -->
         <div>
           <button
-            :disabled="uploading || !selectedFile || !backendOnline"
+            :disabled="uploading || selectedFiles.length === 0 || !backendOnline"
             class="w-full py-3 bg-primary text-on-primary rounded-xl font-bold flex items-center justify-center gap-2 shadow hover:bg-primary-dim active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             @click="handleIngest"
           >
@@ -238,16 +274,32 @@ onMounted(() => {
       </div>
 
       <p class="mt-4 text-xs text-secondary">
-        支持格式：PDF、DOCX、PPTX、PNG/JPG（含图片型文档）· 单文件上限 50 MB
+        支持格式：PDF、DOCX、PPTX、PNG/JPG（含图片型文档）· 单文件上限 50 MB · 批量最多 10 个文件
       </p>
+
+      <!-- Upload Progress Bar -->
+      <div v-if="uploading && uploadProgress > 0" class="mt-4">
+        <div class="flex items-center justify-between text-xs text-secondary mb-1">
+          <span>上传中...</span>
+          <span>{{ uploadProgress }}%</span>
+        </div>
+        <div class="w-full bg-surface-container-high rounded-full h-1.5 overflow-hidden">
+          <div
+            class="bg-primary h-1.5 rounded-full transition-all duration-300"
+            :style="{ width: uploadProgress + '%' }"
+          ></div>
+        </div>
+      </div>
     </section>
 
     <!-- ── Tasks ─────────────────────────────── -->
     <section>
       <h2 class="text-lg font-bold text-on-surface mb-5">入库任务记录</h2>
 
-      <div v-if="tasks.length === 0" class="text-center py-16 text-secondary text-sm">
-        暂无入库任务，上传文档后可在此查看处理进度。
+      <div v-if="tasks.length === 0" class="flex flex-col items-center gap-3 py-16 text-center">
+        <el-icon :size="40" class="text-secondary/30"><UploadFilled /></el-icon>
+        <p class="text-sm font-medium text-secondary">暂无入库任务</p>
+        <p class="text-xs text-on-surface-variant">上传文档后，可在此实时追踪入库进度</p>
       </div>
 
       <div v-else class="bg-surface-container-lowest rounded-2xl shadow-[0_4px_20px_rgba(0,52,94,0.04)] overflow-hidden">
