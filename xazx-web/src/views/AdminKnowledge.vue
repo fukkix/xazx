@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import { CircleCheck, Document, Loading, Refresh, UploadFilled, Warning } from '@element-plus/icons-vue'
 import {
@@ -10,6 +11,8 @@ import {
   type StatsResponse,
   type TaskStatusResponse
 } from '../services/knowledge'
+
+const router = useRouter()
 
 type TaskRow = {
   task_id: string
@@ -120,13 +123,14 @@ const handleFileChange = (event: Event) => {
 
 const upsertTask = (payload: TaskStatusResponse, fallback?: { filename: string; domain: string }) => {
   const idx = tasks.value.findIndex((it) => it.task_id === payload.task_id)
+  const existing = idx >= 0 ? tasks.value[idx] : null
   const next: TaskRow = {
     task_id: payload.task_id,
-    filename: idx >= 0 ? tasks.value[idx].filename : (fallback?.filename ?? '未知文件'),
-    domain: idx >= 0 ? tasks.value[idx].domain : (fallback?.domain ?? selectedDomain.value),
+    filename: existing ? existing.filename : (fallback?.filename ?? '未知文件'),
+    domain: existing ? existing.domain : (fallback?.domain ?? selectedDomain.value),
     status: payload.status,
     progress: payload.progress,
-    startedAt: idx >= 0 ? tasks.value[idx].startedAt : new Date().toLocaleString('zh-CN'),
+    startedAt: existing ? existing.startedAt : new Date().toLocaleString('zh-CN'),
     processing_time_ms: payload.processing_time_ms,
     error: payload.error,
     wiki_page_title: payload.wiki_page_title,
@@ -146,6 +150,16 @@ const stopPolling = (taskId: string) => {
     window.clearTimeout(timer)
     pollingTimers.delete(taskId)
   }
+}
+
+const shouldOpenManualEntry = (errorMessage?: string) => {
+  if (!errorMessage) return false
+  const msg = errorMessage.toLowerCase()
+  return (
+    msg.includes('failed to parse docx') ||
+    msg.includes('there is no item named') ||
+    msg.includes('null')
+  )
 }
 
 const pollTask = async (taskId: string, fallback?: { filename: string; domain: string }) => {
@@ -173,6 +187,19 @@ const pollTask = async (taskId: string, fallback?: { filename: string; domain: s
         type: 'error',
         duration: 5000
       })
+
+      if (shouldOpenManualEntry(status.error)) {
+        ElMessage.warning('检测到 DOCX 图片引用异常，已切换到手动填写页面')
+        await router.push({
+          path: '/knowledge/manual-entry',
+          query: {
+            file: fallback?.filename ?? '',
+            domain: fallback?.domain ?? selectedDomain.value,
+            productLine: selectedProductLine.value,
+            reason: 'docx_image_relationship_error'
+          }
+        })
+      }
       return
     }
 

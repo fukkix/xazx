@@ -79,6 +79,11 @@ const router = createRouter({
           path: 'knowledge',
           name: 'admin-knowledge',
           component: () => import('../views/AdminKnowledge.vue')
+        },
+        {
+          path: 'knowledge/manual-entry',
+          name: 'manual-wiki-entry',
+          component: () => import('../views/ManualWikiEntry.vue')
         }
       ]
     },
