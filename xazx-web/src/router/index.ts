@@ -47,6 +47,12 @@ const router = createRouter({
       component: () => import('../views/Login.vue')
     },
 
+    // ── Compatibility: legacy admin knowledge path ──
+    {
+      path: '/admin/knowledge',
+      redirect: '/knowledge'
+    },
+
     // ── Admin Backend (auth required) ──
     {
       path: '/',
