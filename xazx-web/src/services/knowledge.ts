@@ -244,5 +244,38 @@ export const knowledgeApi = {
    */
   async health(): Promise<{ status: string; service: string; wiki_dir: string; wiki_exists: boolean; max_file_size_mb: number }> {
     return request(`${BASE_URL}/api/knowledge/health`)
-  }
+  },
+
+  /**
+   * 手动提交 Wiki 页面（含图片上传）
+   */
+  async manualSubmit(data: {
+    title: string
+    domain: string
+    summary: string
+    content: string
+    keywords: string
+    audience: string
+    relatedTopics: string
+    productLine?: string
+    sourceFile?: string
+    images: File[]
+  }): Promise<{ status: string; wiki_page_path: string; wiki_page_title: string; images_saved: number }> {
+    const form = new FormData()
+    form.append('title', data.title)
+    form.append('domain', data.domain)
+    form.append('summary', data.summary)
+    form.append('content', data.content)
+    form.append('keywords', data.keywords)
+    form.append('audience', data.audience)
+    form.append('related_topics', data.relatedTopics)
+    if (data.productLine) form.append('product_line', data.productLine)
+    if (data.sourceFile) form.append('source_file', data.sourceFile)
+    data.images.forEach((img) => form.append('images', img))
+
+    return request(`${BASE_URL}/api/knowledge/manual-submit`, {
+      method: 'POST',
+      body: form,
+    })
+  },
 }
