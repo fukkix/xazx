@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useDocEditorStore } from '@/stores/docEditor'
 import type { DocNode } from '@/types/editor'
 import BlockRenderer from '../BlockRenderer.vue'
@@ -13,10 +13,33 @@ const props = defineProps<{
 const store = useDocEditorStore()
 const isSelected = computed(() => store.selectedNodeId === props.node.id)
 const paddingLeft = computed(() => (props.depth || 0) * 16)
+const contentRef = ref<HTMLElement | null>(null)
+const isComposing = ref(false)
 
-function updateContent(e: Event) {
+watch(
+  () => props.node.content,
+  (val) => {
+    if (contentRef.value && contentRef.value.innerText !== val) {
+      contentRef.value.innerText = val || ''
+    }
+  },
+  { immediate: true },
+)
+
+function onInput(e: Event) {
+  if (isComposing.value) return
   const target = e.target as HTMLElement
   store.updateNodeSilent(props.node.id, { content: target.innerText })
+}
+
+function onCompositionStart() {
+  isComposing.value = true
+}
+
+function onCompositionEnd(e: Event) {
+  isComposing.value = false
+  const target = e.target as HTMLElement
+  store.updateNode(props.node.id, { content: target.innerText })
 }
 
 function onBlur(e: Event) {
@@ -43,6 +66,7 @@ function changeLevel(delta: number) {
   >
     <div class="flex items-center gap-2">
       <div
+        ref="contentRef"
         class="font-bold text-on-surface outline-none flex-1"
         :class="{
           'text-2xl': node.level === 1,
@@ -53,9 +77,10 @@ function changeLevel(delta: number) {
           'text-xs': node.level === 6,
         }"
         contenteditable
-        @input="updateContent"
+        @input="onInput"
+        @compositionstart="onCompositionStart"
+        @compositionend="onCompositionEnd"
         @blur="onBlur"
-        v-text="node.content"
       />
       <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <el-button size="small" text @click.stop="changeLevel(-1)">←</el-button>

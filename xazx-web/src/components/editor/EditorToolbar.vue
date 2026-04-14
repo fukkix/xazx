@@ -73,10 +73,11 @@ function insertHeading() {
       <el-button size="small" @click="insertBlock('image')">+ 图片</el-button>
       <el-button size="small" @click="insertBlock('path')">+ 路径</el-button>
       <el-button size="small" @click="insertBlock('callout')">+ 提示</el-button>
+      <el-button size="small" @click="insertBlock('feature-matrix')">+ 功能矩阵</el-button>
 
       <el-divider direction="vertical" />
 
-      <el-button size="small" type="info" plain @click="emit('import-word')">导入 Word</el-button>
+      <el-button size="small" type="info" plain @click="emit('import-word')">导入文档</el-button>
     </div>
 
     <div class="flex items-center gap-2">

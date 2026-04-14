@@ -17,6 +17,7 @@ const localCells = ref<TableCell[][]>(
 )
 
 const selectedCells = ref<[number, number][]>([])
+const activeCol = ref<number | null>(null)
 
 const rowCount = computed(() => localCells.value.length)
 const colCount = computed(() => (localCells.value[0] ? localCells.value[0].length : 0))
@@ -26,6 +27,7 @@ function isSelected(r: number, c: number) {
 }
 
 function toggleSelect(r: number, c: number) {
+  activeCol.value = null
   const idx = selectedCells.value.findIndex(([sr, sc]) => sr === r && sc === c)
   if (idx >= 0) {
     selectedCells.value.splice(idx, 1)
@@ -36,6 +38,7 @@ function toggleSelect(r: number, c: number) {
 
 function clearSelection() {
   selectedCells.value = []
+  activeCol.value = null
 }
 
 function addRow() {
@@ -159,10 +162,45 @@ function cleanStyles() {
   }
   ElMessage.success('已清洗冗余样式')
 }
+
+// Quick fill for feature matrix
+const QUICK_MARKS = ['√', '×', '-', '']
+function cycleMark(cell: TableCell) {
+  const current = cell.content || ''
+  const idx = QUICK_MARKS.indexOf(current)
+  const next = QUICK_MARKS[(idx + 1) % QUICK_MARKS.length] || ''
+  cell.content = next
+}
+
+function onCellDblClick(cell: TableCell) {
+  if (QUICK_MARKS.includes(cell.content || '')) {
+    cycleMark(cell)
+  }
+}
+
+function fillColumn(colIndex: number, value: string) {
+  for (const row of localCells.value) {
+    if (row[colIndex] && !row[colIndex]!.isMerged) {
+      row[colIndex]!.content = value
+    }
+  }
+  ElMessage.success(`第 ${colIndex + 1} 列已填充`)
+}
+
+function selectColumn(colIndex: number) {
+  activeCol.value = colIndex
+  selectedCells.value = []
+  for (let r = 0; r < localCells.value.length; r++) {
+    const cell = localCells.value[r]![colIndex]
+    if (cell && !cell.isMerged) {
+      selectedCells.value.push([r, colIndex])
+    }
+  }
+}
 </script>
 
 <template>
-  <el-dialog title="编辑表格" width="800px" :model-value="true" @close="emit('cancel')">
+  <el-dialog title="编辑表格" width="900px" :model-value="true" @close="emit('cancel')">
     <div class="flex items-center gap-2 mb-4 flex-wrap">
       <el-button size="small" @click="addRow">+ 行</el-button>
       <el-button size="small" @click="addCol">+ 列</el-button>
@@ -177,6 +215,32 @@ function cleanStyles() {
 
     <div class="overflow-auto border border-outline-variant rounded-lg p-3 bg-surface-container-lowest">
       <table class="border-collapse">
+        <thead>
+          <tr>
+            <th
+              v-for="cIdx in colCount"
+              :key="`col-${cIdx-1}`"
+              class="border border-outline-variant bg-surface-container-low px-2 py-1 text-xs text-secondary cursor-pointer select-none"
+              :class="activeCol === cIdx - 1 ? 'bg-primary/20' : ''"
+              @click="selectColumn(cIdx - 1)"
+            >
+              <div class="flex items-center justify-center gap-1">
+                <span>列{{ cIdx }}</span>
+                <el-dropdown trigger="click" @command="(cmd: string) => fillColumn(cIdx - 1, cmd)">
+                  <el-icon class="hover:text-primary"><ArrowDown /></el-icon>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item command="√">填充 √</el-dropdown-item>
+                      <el-dropdown-item command="×">填充 ×</el-dropdown-item>
+                      <el-dropdown-item command="-">填充 -</el-dropdown-item>
+                      <el-dropdown-item command="">清空</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </div>
+            </th>
+          </tr>
+        </thead>
         <tbody>
           <tr v-for="(row, rIdx) in localCells" :key="rIdx">
             <td
@@ -188,6 +252,7 @@ function cleanStyles() {
               :colspan="cell.colspan || 1"
               :style="cell.isMerged ? 'display:none' : ''"
               @click="toggleSelect(rIdx, cIdx)"
+              @dblclick="onCellDblClick(cell)"
             >
               <el-input
                 :model-value="cell.content"
@@ -201,6 +266,10 @@ function cleanStyles() {
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="mt-3 text-xs text-secondary">
+      提示：双击单元格可在 √ / × / - 之间快速切换；点击列头可整列选中，点击列头右侧箭头可批量填充。
     </div>
 
     <template #footer>

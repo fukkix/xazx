@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
+
 const props = defineProps<{
   index: number
   content: string
@@ -9,7 +11,31 @@ const emit = defineEmits<{
   (e: 'remove'): void
 }>()
 
+const contentRef = ref<HTMLElement | null>(null)
+const isComposing = ref(false)
+
+watch(
+  () => props.content,
+  (val) => {
+    if (contentRef.value && contentRef.value.innerText !== val) {
+      contentRef.value.innerText = val
+    }
+  },
+  { immediate: true },
+)
+
 function onInput(e: Event) {
+  if (isComposing.value) return
+  const target = e.target as HTMLElement
+  emit('update', target.innerText)
+}
+
+function onCompositionStart() {
+  isComposing.value = true
+}
+
+function onCompositionEnd(e: Event) {
+  isComposing.value = false
   const target = e.target as HTMLElement
   emit('update', target.innerText)
 }
@@ -21,10 +47,12 @@ function onInput(e: Event) {
       步骤{{ index }}
     </div>
     <div
+      ref="contentRef"
       class="flex-1 text-sm text-on-surface outline-none min-h-[1.5em]"
       contenteditable
       @input="onInput"
-      v-text="content"
+      @compositionstart="onCompositionStart"
+      @compositionend="onCompositionEnd"
     />
     <el-button
       class="opacity-0 group-hover:opacity-100 transition-opacity"

@@ -8,6 +8,7 @@ export type DocNodeType =
   | 'steps'
   | 'step-item'
   | 'table'
+  | 'feature-matrix'
   | 'image'
   | 'callout'
   | 'path'
@@ -17,6 +18,17 @@ export interface TableCell {
   rowspan?: number
   colspan?: number
   isMerged?: boolean
+}
+
+export interface FeatureMatrixItem {
+  name: string
+  description: string
+  supports: Record<string, string>
+}
+
+export interface FeatureMatrixCategory {
+  name: string
+  items: FeatureMatrixItem[]
 }
 
 export interface DocNode {
@@ -31,6 +43,9 @@ export interface DocNode {
   permissions?: string[]
   // table specific
   cells?: TableCell[][]
+  // feature-matrix specific
+  versions?: string[]
+  categories?: FeatureMatrixCategory[]
   // image specific
   alt?: string
   file?: File

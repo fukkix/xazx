@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { knowledgeApi } from '@/services/knowledge'
-import { useDocEditorStore, createNode } from '@/stores/docEditor'
+import { useDocEditorStore, createNode, type DraftData } from '@/stores/docEditor'
 import { v4 as uuidv4 } from 'uuid'
-import { DEFAULT_TAGS, type DocNode } from '@/types/editor'
+import { DEFAULT_TAGS, type DocNode, type TableCell } from '@/types/editor'
 import DocOutline from '@/components/editor/DocOutline.vue'
 import EditorToolbar from '@/components/editor/EditorToolbar.vue'
 import BlockRenderer from '@/components/editor/BlockRenderer.vue'
@@ -36,6 +36,64 @@ const activeTab = ref('properties')
 const isSubmitting = ref(false)
 const previewMd = ref('')
 const previewHtml = ref('')
+const autoSaveEnabled = ref(true)
+const lastSavedAt = ref('')
+const showDraftDialog = ref(false)
+const draftToRestore = ref<DraftData | null>(null)
+
+let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
+const AUTO_SAVE_DELAY = 3000
+
+function triggerAutoSave() {
+  if (!autoSaveEnabled.value) return
+  if (autoSaveTimer) clearTimeout(autoSaveTimer)
+  autoSaveTimer = setTimeout(() => {
+    doSaveDraft(false)
+  }, AUTO_SAVE_DELAY)
+}
+
+function doSaveDraft(showMsg = true) {
+  const ok = store.saveDraft({
+    title: title.value,
+    summary: summary.value,
+    keywords: keywords.value,
+    audience: audience.value,
+    relatedTopics: relatedTopics.value,
+    domain: domain.value,
+    productLine: productLine.value,
+    sourceFile: sourceFile.value,
+  })
+  if (ok) {
+    lastSavedAt.value = new Date().toLocaleTimeString('zh-CN')
+    if (showMsg) ElMessage.success('草稿已保存')
+  } else {
+    if (showMsg) ElMessage.warning('草稿保存失败，文档可能过大')
+  }
+}
+
+function restoreDraft() {
+  if (!draftToRestore.value) return
+  const d = draftToRestore.value
+  store.initDocument(d.docTree)
+  title.value = d.meta.title
+  summary.value = d.meta.summary
+  keywords.value = d.meta.keywords
+  audience.value = d.meta.audience
+  relatedTopics.value = d.meta.relatedTopics
+  domain.value = d.meta.domain
+  productLine.value = d.meta.productLine
+  sourceFile.value = d.meta.sourceFile
+  showDraftDialog.value = false
+  draftToRestore.value = null
+  lastSavedAt.value = new Date(d.savedAt).toLocaleTimeString('zh-CN')
+  ElMessage.success('草稿已恢复')
+}
+
+function discardDraft() {
+  store.clearDraft()
+  showDraftDialog.value = false
+  draftToRestore.value = null
+}
 
 const domainOptions = ['产品知识', '技术文档', '销售支持', '行业合规', '内部运营']
 const audienceOptions = ['研发', '售前', '售后', '销售']
@@ -44,10 +102,19 @@ const audienceOptions = ['研发', '售前', '售后', '销售']
 const fragments = ref<{ id: string; name: string; nodes: DocNode[] }[]>([])
 
 onMounted(() => {
-  // 初始化一个示例文档结构
-  store.initDocument([
-    createNode('heading', { level: 1, content: '新文档' }),
-  ])
+  // 检查是否有草稿
+  if (store.hasDraft()) {
+    const draft = store.loadDraft()
+    if (draft) {
+      draftToRestore.value = draft
+      showDraftDialog.value = true
+    }
+  }
+  if (!showDraftDialog.value) {
+    store.initDocument([
+      createNode('heading', { level: 1, content: '新文档' }),
+    ])
+  }
   // 加载片段库
   const saved = localStorage.getItem('doc_fragments')
   if (saved) {
@@ -66,8 +133,18 @@ function onKeyDown(e: KeyboardEvent) {
   }
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
     e.preventDefault()
-    activeTab.value = 'preview'
-    updatePreview()
+    doSaveDraft(true)
+  }
+  if (e.key === 'Backspace' || e.key === 'Delete') {
+    const active = document.activeElement
+    const isEditing =
+      active?.tagName === 'INPUT' ||
+      active?.tagName === 'TEXTAREA' ||
+      (active as HTMLElement)?.isContentEditable
+    if (!isEditing && store.selectedNodeId) {
+      e.preventDefault()
+      store.removeNode(store.selectedNodeId)
+    }
   }
 }
 onMounted(() => {
@@ -175,6 +252,7 @@ function onWordImported(nodes: DocNode[], images: File[]) {
     }
     walk(node)
   })
+  doSaveDraft(false)
 }
 
 function updatePreview() {
@@ -235,6 +313,7 @@ async function submitPage() {
       sourceFile: sourceFile.value || undefined,
       images: imageFiles.value,
     })
+    store.clearDraft()
     ElMessage.success(`Wiki 页面已保存: ${result.wiki_page_title}（图片 ${result.images_saved} 张）`)
     router.push('/knowledge')
   } catch (e: unknown) {
@@ -243,6 +322,16 @@ async function submitPage() {
     isSubmitting.value = false
   }
 }
+
+// Watch meta fields for auto-save
+watch([title, summary, keywords, audience, relatedTopics, domain, productLine, sourceFile], () => {
+  triggerAutoSave()
+}, { deep: true })
+
+// Watch docTree for auto-save (use deep watcher on array)
+watch(() => store.docTree, () => {
+  triggerAutoSave()
+}, { deep: true })
 
 function goBack() {
   router.push('/knowledge')
@@ -257,6 +346,107 @@ function onCanvasClick(e: MouseEvent) {
     showLinkPopover.value = true
   }
 }
+
+function onPaste(e: ClipboardEvent) {
+  const html = e.clipboardData?.getData('text/html') || ''
+  const text = e.clipboardData?.getData('text/plain') || ''
+
+  let cells: TableCell[][] | null = null
+
+  if (html.includes('<table')) {
+    cells = parseHtmlTableFromClipboard(html)
+  } else if (text.includes('\t')) {
+    cells = parseTextTable(text)
+  }
+
+  if (cells && cells.length > 0) {
+    e.preventDefault()
+    insertTableBlock(cells)
+    ElMessage.success('已粘贴为表格')
+  }
+}
+
+function parseHtmlTableFromClipboard(html: string): TableCell[][] {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(html, 'text/html')
+  const table = doc.querySelector('table')
+  if (!table) return []
+
+  const rows = Array.from(table.querySelectorAll('tr'))
+  if (!rows.length) return []
+  const colCount = Math.max(...rows.map((r) => r.querySelectorAll('td, th').length))
+  if (!colCount) return []
+
+  const grid: (TableCell | null)[][] = Array.from({ length: rows.length }, () =>
+    Array.from({ length: colCount }, () => null),
+  )
+
+  rows.forEach((tr, r) => {
+    const tds = Array.from(tr.querySelectorAll('td, th'))
+    let c = 0
+    tds.forEach((td) => {
+      while (c < colCount && grid[r]![c]) c++
+      if (c >= colCount) return
+      const rowspan = parseInt(td.getAttribute('rowspan') || '1')
+      const colspan = parseInt(td.getAttribute('colspan') || '1')
+      const cell: TableCell = {
+        content: td.textContent?.trim() || '',
+        rowspan,
+        colspan,
+        isMerged: false,
+      }
+      grid[r]![c] = cell
+      for (let i = 0; i < rowspan; i++) {
+        for (let j = 0; j < colspan; j++) {
+          if (i === 0 && j === 0) continue
+          if (grid[r + i]) {
+            grid[r + i]![c + j] = { content: '', isMerged: true }
+          }
+        }
+      }
+      c++
+    })
+  })
+
+  return grid.map((row) => row.map((cell) => cell || { content: '', isMerged: false }))
+}
+
+function parseTextTable(text: string): TableCell[][] {
+  const rows = text.split(/\r?\n/).filter((line) => line.trim() !== '')
+  return rows.map((row) =>
+    row.split('\t').map((cell) => ({ content: cell.trim(), isMerged: false })),
+  )
+}
+
+function insertTableBlock(cells: TableCell[][]) {
+  const tableNode = createNode('table', { cells })
+  if (store.selectedNodeId) {
+    const selected = store.selectedNode!
+    let parentId: string | null = null
+    let index = store.docTree.length
+
+    const findParentId = (arr: DocNode[], id: string): string | null => {
+      for (const n of arr) {
+        if (n.children) {
+          if (n.children.some((c) => c.id === id)) return n.id
+          const deep = findParentId(n.children, id)
+          if (deep) return deep
+        }
+      }
+      return null
+    }
+    parentId = findParentId(store.docTree, selected.id)
+    if (parentId) {
+      const parent = store.allNodes.find((n) => n.id === parentId)
+      index = (parent?.children?.findIndex((c) => c.id === selected.id) ?? -1) + 1
+    } else {
+      index = store.docTree.findIndex((n) => n.id === selected.id) + 1
+    }
+    store.addNode(parentId, tableNode, index)
+  } else {
+    store.addNode(null, tableNode)
+  }
+}
 </script>
 
 <template>
@@ -267,7 +457,11 @@ function onCanvasClick(e: MouseEvent) {
         <h1 class="text-2xl font-bold text-on-surface">手动编辑 Wiki 页面</h1>
         <p class="text-sm text-secondary mt-1">结构化编辑器：支持层级、表格、步骤、截图标注与 Word 导入</p>
       </div>
-      <el-button @click="goBack">返回知识库管理</el-button>
+      <div class="flex items-center gap-3">
+        <div v-if="lastSavedAt" class="text-xs text-secondary">草稿保存于 {{ lastSavedAt }}</div>
+        <el-switch v-model="autoSaveEnabled" active-text="自动保存" size="small" />
+        <el-button @click="goBack">返回知识库管理</el-button>
+      </div>
     </div>
 
     <!-- 来源信息 -->
@@ -312,7 +506,7 @@ function onCanvasClick(e: MouseEvent) {
         </div>
 
         <!-- 中间画布 -->
-        <div class="flex-1 overflow-auto pr-2" @click="onCanvasClick">
+        <div class="flex-1 overflow-auto pr-2" @click="onCanvasClick" @paste="onPaste">
           <div class="space-y-1 min-h-full pb-20">
             <BlockRenderer
               v-for="node in store.docTree"
@@ -406,6 +600,7 @@ function onCanvasClick(e: MouseEvent) {
     <!-- 底部提交栏 -->
     <div class="flex items-center justify-end gap-4 pb-8">
       <el-button @click="goBack">取消</el-button>
+      <el-button type="info" size="large" @click="doSaveDraft(true)">保存草稿</el-button>
       <el-button type="primary" size="large" :disabled="!canSubmit" :loading="isSubmitting" @click="submitPage">
         提交到知识库
       </el-button>
@@ -413,6 +608,18 @@ function onCanvasClick(e: MouseEvent) {
 
     <!-- 弹窗 -->
     <WordImporter v-if="showWordImporter" @imported="onWordImported" @close="showWordImporter = false" />
+
+    <!-- 草稿恢复弹窗 -->
+    <el-dialog v-model="showDraftDialog" title="恢复草稿" width="480px" :close-on-click-modal="false">
+      <p class="text-sm text-on-surface mb-2">检测到未提交的草稿，是否继续编辑？</p>
+      <p v-if="draftToRestore" class="text-xs text-secondary">
+        上次保存时间：{{ new Date(draftToRestore.savedAt).toLocaleString('zh-CN') }}
+      </p>
+      <template #footer>
+        <el-button @click="discardDraft">不恢复，开始新文档</el-button>
+        <el-button type="primary" @click="restoreDraft">恢复草稿</el-button>
+      </template>
+    </el-dialog>
 
     <!-- Link Popover -->
     <div

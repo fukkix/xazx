@@ -8,6 +8,7 @@ import TableBlock from './blocks/TableBlock.vue'
 import ImageBlock from './blocks/ImageBlock.vue'
 import PathBlock from './blocks/PathBlock.vue'
 import CalloutBlock from './blocks/CalloutBlock.vue'
+import FeatureMatrixBlock from './blocks/FeatureMatrixBlock.vue'
 
 const props = defineProps<{
   node: DocNode
@@ -26,6 +27,7 @@ const depth = computed(() => props.depth || 0)
     <ImageBlock v-else-if="node.type === 'image'" :node="node" />
     <PathBlock v-else-if="node.type === 'path'" :node="node" />
     <CalloutBlock v-else-if="node.type === 'callout'" :node="node" />
+    <FeatureMatrixBlock v-else-if="node.type === 'feature-matrix'" :node="node" />
   </div>
 </template>
 

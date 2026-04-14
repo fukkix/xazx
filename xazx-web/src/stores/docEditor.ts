@@ -107,9 +107,46 @@ function nodeToMarkdown(node: DocNode, depth = 0): string {
       return `${indent}${node.content || ''}\n\n`
     case 'callout':
       return `${indent}> ⚠️ ${node.content || ''}\n\n`
+    case 'feature-matrix': {
+      if (!node.categories || node.categories.length === 0) return ''
+      const versions = node.versions || []
+      let md = `${indent}| 功能类别 | 功能项 | 功能说明`
+      versions.forEach((v) => (md += ` | ${v}`))
+      md += ' |\n'
+      md += `${indent}| --- | --- | ---`
+      versions.forEach(() => (md += ' | ---'))
+      md += ' |\n'
+      node.categories.forEach((cat) => {
+        cat.items.forEach((item, idx) => {
+          md += `${indent}| ${idx === 0 ? cat.name : ''} | ${item.name} | ${item.description}`
+          versions.forEach((v) => {
+            md += ` | ${item.supports[v] || ''}`
+          })
+          md += ' |\n'
+        })
+      })
+      return md + '\n'
+    }
     default:
       return ''
   }
+}
+
+const DRAFT_KEY = 'manual_wiki_draft'
+
+export interface DraftData {
+  docTree: DocNode[]
+  meta: {
+    title: string
+    summary: string
+    keywords: string
+    audience: string[]
+    relatedTopics: string
+    domain: string
+    productLine: string
+    sourceFile: string
+  }
+  savedAt: string
 }
 
 export const useDocEditorStore = defineStore('docEditor', () => {
@@ -135,6 +172,47 @@ export const useDocEditorStore = defineStore('docEditor', () => {
     } else {
       historyIndex.value++
     }
+  }
+
+  function stripFiles(nodes: DocNode[]): DocNode[] {
+    return nodes.map((n) => {
+      const copy: DocNode = { ...n, file: undefined }
+      if (n.children) copy.children = stripFiles(n.children)
+      return copy
+    })
+  }
+
+  function saveDraft(meta: DraftData['meta']): boolean {
+    try {
+      const draft: DraftData = {
+        docTree: stripFiles(deepClone(docTree.value)),
+        meta: deepClone(meta),
+        savedAt: new Date().toISOString(),
+      }
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+      return true
+    } catch (e) {
+      console.error('Save draft failed', e)
+      return false
+    }
+  }
+
+  function loadDraft(): DraftData | null {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY)
+      if (!raw) return null
+      return JSON.parse(raw) as DraftData
+    } catch {
+      return null
+    }
+  }
+
+  function clearDraft() {
+    localStorage.removeItem(DRAFT_KEY)
+  }
+
+  function hasDraft(): boolean {
+    return !!localStorage.getItem(DRAFT_KEY)
   }
 
   function initDocument(nodes: DocNode[]) {
@@ -278,6 +356,10 @@ export const useDocEditorStore = defineStore('docEditor', () => {
     toHtml,
     canUndo,
     canRedo,
+    saveDraft,
+    loadDraft,
+    clearDraft,
+    hasDraft,
   }
 })
 
@@ -299,6 +381,17 @@ export function createNode(type: DocNode['type'], overrides: Partial<DocNode> = 
     base.cells = [
       [{ content: '字段' }, { content: '说明' }],
       [{ content: '' }, { content: '' }],
+    ]
+  }
+  if (type === 'feature-matrix') {
+    base.versions = ['JVS SaaS版', 'JVS软件版']
+    base.categories = [
+      {
+        name: '部署模式',
+        items: [
+          { name: '支持透明网桥部署', description: '防护系统内部实现网桥...', supports: { 'JVS SaaS版': '', 'JVS软件版': '√' } },
+        ],
+      },
     ]
   }
   return base

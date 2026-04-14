@@ -39,6 +39,10 @@ function onNodeClick(data: TreeNode) {
   }
 }
 
+function onDeleteNode(id: string) {
+  store.removeNode(id)
+}
+
 function allowDrop(_: any, dropNode: any, type: string) {
   // Only allow drop inside or next to heading nodes
   return dropNode.data.level !== undefined && (type === 'inner' || type === 'next' || type === 'prev')
@@ -128,7 +132,7 @@ watch(
     >
       <template #default="{ node, data }">
         <div
-          class="flex items-center gap-2 py-1 text-sm"
+          class="flex items-center justify-between gap-2 py-1 text-sm group"
           :class="{
             'pl-0': data.level === 1,
             'pl-3': data.level === 2,
@@ -138,6 +142,15 @@ watch(
           :data-id="data.id"
         >
           <span class="truncate" :title="data.label">{{ data.label }}</span>
+          <el-button
+            class="opacity-0 group-hover:opacity-100 transition-opacity"
+            size="small"
+            text
+            type="danger"
+            @click.stop="onDeleteNode(data.id)"
+          >
+            <el-icon><Delete /></el-icon>
+          </el-button>
         </div>
       </template>
     </el-tree>
