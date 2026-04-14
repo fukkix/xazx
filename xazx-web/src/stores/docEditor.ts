@@ -182,10 +182,66 @@ export const useDocEditorStore = defineStore('docEditor', () => {
     })
   }
 
-  function saveDraft(meta: DraftData['meta']): boolean {
+  async function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(String(reader.result))
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+  }
+
+  function base64ToFile(base64: string, filename: string): File {
+    const arr = base64.split(',')
+    const mime = arr[0]!.match(/:(.*?);/)?.[1] || 'image/png'
+    const data = arr[1] || ''
+    const bstr = atob(data)
+    let n = bstr.length
+    const u8arr = new Uint8Array(n)
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n)
+    }
+    return new File([u8arr], filename, { type: mime })
+  }
+
+  async function embedImages(nodes: DocNode[]): Promise<void> {
+    for (const node of nodes) {
+      if (node.type === 'image' && node.file) {
+        if (!node.attrs) node.attrs = {}
+        try {
+          node.attrs._base64Image = await fileToBase64(node.file)
+          node.attrs._imageName = node.file.name
+        } catch {
+          // ignore
+        }
+      }
+      if (node.children) {
+        await embedImages(node.children)
+      }
+    }
+  }
+
+  function restoreImages(nodes: DocNode[]): void {
+    for (const node of nodes) {
+      if (node.type === 'image' && node.attrs?._base64Image) {
+        const file = base64ToFile(node.attrs._base64Image, node.attrs._imageName || 'image.png')
+        node.file = file
+        node.url = URL.createObjectURL(file)
+        delete node.attrs._base64Image
+        delete node.attrs._imageName
+      }
+      if (node.children) {
+        restoreImages(node.children)
+      }
+    }
+  }
+
+  async function saveDraft(meta: DraftData['meta']): Promise<boolean> {
     try {
+      const tree = deepClone(docTree.value)
+      await embedImages(tree)
       const draft: DraftData = {
-        docTree: stripFiles(deepClone(docTree.value)),
+        docTree: stripFiles(tree),
         meta: deepClone(meta),
         savedAt: new Date().toISOString(),
       }
@@ -201,7 +257,9 @@ export const useDocEditorStore = defineStore('docEditor', () => {
     try {
       const raw = localStorage.getItem(DRAFT_KEY)
       if (!raw) return null
-      return JSON.parse(raw) as DraftData
+      const draft = JSON.parse(raw) as DraftData
+      restoreImages(draft.docTree)
+      return draft
     } catch {
       return null
     }

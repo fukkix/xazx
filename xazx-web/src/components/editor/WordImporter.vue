@@ -5,6 +5,7 @@ import * as mammoth from 'mammoth'
 import * as XLSX from 'xlsx'
 import { createNode } from '@/stores/docEditor'
 import type { DocNode, TableCell } from '@/types/editor'
+import { parseHtmlToNodes, parseMarkdownToNodes, cleanText } from '@/utils/importParser'
 
 const emit = defineEmits<{
   (e: 'imported', nodes: DocNode[], images: File[]): void
@@ -21,16 +22,27 @@ async function onFileChange(file: File) {
 
   try {
     let nodes: DocNode[] = []
+    let imgs: File[] = []
     if (file.name.endsWith('.docx')) {
-      nodes = await importDocx(file)
+      const result = await importDocx(file)
+      nodes = result.nodes
+      imgs = result.images
     } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
       nodes = await importExcel(file)
+    } else if (file.name.endsWith('.html') || file.name.endsWith('.htm')) {
+      const html = await file.text()
+      const result = parseHtmlToNodes(html)
+      nodes = result.nodes
+      imgs = result.images
+    } else if (file.name.endsWith('.md') || file.name.endsWith('.markdown')) {
+      const md = await file.text()
+      nodes = parseMarkdownToNodes(md)
     } else {
-      ElMessage.warning('仅支持 .docx / .xlsx / .xls 文件')
+      ElMessage.warning('仅支持 .docx / .xlsx / .xls / .html / .md 文件')
       loading.value = false
       return
     }
-    emit('imported', nodes, images.value)
+    emit('imported', nodes, imgs)
     emit('close')
     ElMessage.success(`导入成功，解析 ${nodes.length} 个块`)
   } catch (e: any) {
@@ -40,7 +52,7 @@ async function onFileChange(file: File) {
   }
 }
 
-async function importDocx(file: File): Promise<DocNode[]> {
+async function importDocx(file: File): Promise<{ nodes: DocNode[]; images: File[] }> {
   const zipData = await file.arrayBuffer()
   const JSZip = (await import('jszip')).default
   const zip = await JSZip.loadAsync(zipData)
@@ -52,105 +64,28 @@ async function importDocx(file: File): Promise<DocNode[]> {
       imageFiles.push(new File([blob], `docx_${Date.now()}_${imageFiles.length}.${ext}`, { type: blob.type }))
     }
   }
-  images.value = imageFiles
 
   const result = await mammoth.convertToHtml({ arrayBuffer: zipData })
-  return htmlToNodes(result.value)
-}
-
-function htmlToNodes(html: string): DocNode[] {
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(html, 'text/html')
-  const nodes: DocNode[] = []
-
-  function parseElement(el: Element, parentNodes: DocNode[]) {
-    const tag = el.tagName.toLowerCase()
-    if (/^h[1-6]$/.test(tag)) {
-      const level = parseInt(tag[1]!)
-      const heading = createNode('heading', {
-        level,
-        content: cleanText(el.textContent || ''),
-      })
-      parentNodes.push(heading)
-    } else if (tag === 'p') {
-      const text = cleanText(el.textContent || '')
-      if (text) {
-        parentNodes.push(createNode('paragraph', { content: text }))
-      }
-    } else if (tag === 'table') {
-      const cells = parseHtmlTable(el as HTMLTableElement)
-      if (cells.length) {
-        parentNodes.push(createNode('table', { cells }))
-      }
-    } else if (tag === 'img') {
-      const src = el.getAttribute('src') || ''
-      const imgFile = images.value.find((f) => src.includes(f.name)) || images.value.shift()
-      parentNodes.push(
-        createNode('image', {
-          content: imgFile?.name || src,
-          url: imgFile ? URL.createObjectURL(imgFile) : src,
-          file: imgFile,
-        }),
-      )
-    } else if (tag === 'ol' || tag === 'ul') {
-      const steps = createNode('steps')
-      el.querySelectorAll('li').forEach((li) => {
-        steps.children!.push(createNode('step-item', { content: cleanText(li.textContent || '') }))
-      })
-      if (steps.children!.length) parentNodes.push(steps)
-    } else if (tag === 'div') {
-      for (const child of Array.from(el.children)) {
-        parseElement(child, parentNodes)
-      }
-    }
-  }
-
-  for (const child of Array.from(doc.body.children)) {
-    parseElement(child, nodes)
-  }
-
-  return nodes.length ? nodes : [createNode('paragraph', { content: '导入内容为空' })]
-}
-
-function parseHtmlTable(tableEl: HTMLTableElement): TableCell[][] {
-  const rows = Array.from(tableEl.querySelectorAll('tr'))
-  if (!rows.length) return []
-  const colCount = Math.max(...rows.map((r) => r.querySelectorAll('td, th').length))
-  if (!colCount) return []
-
-  // Initialize grid
-  const grid: (TableCell | null)[][] = Array.from({ length: rows.length }, () =>
-    Array.from({ length: colCount }, () => null),
-  )
-
-  rows.forEach((tr, r) => {
-    const cells = Array.from(tr.querySelectorAll('td, th'))
-    let c = 0
-    cells.forEach((cellEl) => {
-      while (c < colCount && grid[r]![c]) c++
-      if (c >= colCount) return
-      const rowspan = parseInt(cellEl.getAttribute('rowspan') || '1')
-      const colspan = parseInt(cellEl.getAttribute('colspan') || '1')
-      const cell: TableCell = {
-        content: cleanText(cellEl.textContent || ''),
-        rowspan,
-        colspan,
-        isMerged: false,
-      }
-      grid[r]![c] = cell
-      for (let i = 0; i < rowspan; i++) {
-        for (let j = 0; j < colspan; j++) {
-          if (i === 0 && j === 0) continue
-          if (grid[r + i]) {
-            grid[r + i]![c + j] = { content: '', isMerged: true }
-          }
+  // map docx images by matching src names
+  images.value = imageFiles
+  const htmlNodes = parseHtmlToNodes(result.value)
+  // re-attach docx images: parseHtmlToNodes already handles external src,
+  // but docx internal images need name matching.
+  htmlNodes.nodes.forEach((node) => {
+    function walk(n: DocNode) {
+      if (n.type === 'image' && !n.file && n.content) {
+        const imgFile = imageFiles.find((f) => n.content!.includes(f.name)) || imageFiles.shift()
+        if (imgFile) {
+          n.file = imgFile
+          n.url = URL.createObjectURL(imgFile)
+          n.content = imgFile.name
         }
       }
-      c++
-    })
+      n.children?.forEach(walk)
+    }
+    walk(node)
   })
-
-  return grid.map((row) => row.map((cell) => cell || { content: '', isMerged: false }))
+  return { nodes: htmlNodes.nodes, images: imageFiles }
 }
 
 async function importExcel(file: File): Promise<DocNode[]> {
@@ -217,14 +152,6 @@ function parseWorksheet(worksheet: XLSX.WorkSheet): TableCell[][] {
 
   return grid.map((row) => row.map((cell) => cell || { content: '', isMerged: false }))
 }
-
-function cleanText(text: string): string {
-  return text
-    .replace(/\s+/g, ' ')
-    .replace(/width="[\d.]+in"/g, '')
-    .replace(/height="[\d.]+in"/g, '')
-    .trim()
-}
 </script>
 
 <template>
@@ -233,7 +160,7 @@ function cleanText(text: string): string {
       drag
       action="#"
       :auto-upload="false"
-      accept=".docx,.xlsx,.xls"
+      accept=".docx,.xlsx,.xls,.html,.htm,.md,.markdown"
       :limit="1"
       @change="(file: any) => onFileChange(file.raw)"
     >
@@ -242,11 +169,11 @@ function cleanText(text: string): string {
     </el-upload>
 
     <div class="mt-4 text-xs text-secondary space-y-1">
-      <p>• 支持 Word (.docx) 和 Excel (.xlsx / .xls)</p>
+      <p>• 支持 Word (.docx)、Excel (.xlsx / .xls)、HTML (.html)、Markdown (.md)</p>
       <p>• 自动识别标题层级生成大纲</p>
-      <p>• 自动提取文档内嵌图片（Word）</p>
+      <p>• 自动提取文档内嵌图片</p>
       <p>• 自动识别表格合并单元格</p>
-      <p>• Excel 多 Sheet 会按 Sheet 名拆分为多个表格块</p>
+      <p>• 支持将 AI 生成的 HTML / Markdown 直接转为可编辑 Block</p>
     </div>
 
     <template #footer>

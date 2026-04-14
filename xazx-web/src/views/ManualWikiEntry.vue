@@ -6,6 +6,7 @@ import { knowledgeApi } from '@/services/knowledge'
 import { useDocEditorStore, createNode, type DraftData } from '@/stores/docEditor'
 import { v4 as uuidv4 } from 'uuid'
 import { DEFAULT_TAGS, type DocNode, type TableCell } from '@/types/editor'
+import { parseHtmlToNodes, parseMarkdownToNodes } from '@/utils/importParser'
 import DocOutline from '@/components/editor/DocOutline.vue'
 import EditorToolbar from '@/components/editor/EditorToolbar.vue'
 import BlockRenderer from '@/components/editor/BlockRenderer.vue'
@@ -52,8 +53,8 @@ function triggerAutoSave() {
   }, AUTO_SAVE_DELAY)
 }
 
-function doSaveDraft(showMsg = true) {
-  const ok = store.saveDraft({
+async function doSaveDraft(showMsg = true) {
+  const ok = await store.saveDraft({
     title: title.value,
     summary: summary.value,
     keywords: keywords.value,
@@ -240,7 +241,7 @@ function insertFragment(nodes: DocNode[]) {
   })
 }
 
-function onWordImported(nodes: DocNode[], images: File[]) {
+async function onWordImported(nodes: DocNode[], images: File[]) {
   store.initDocument(nodes)
   // Attach images to image blocks
   nodes.forEach((node) => {
@@ -252,7 +253,7 @@ function onWordImported(nodes: DocNode[], images: File[]) {
     }
     walk(node)
   })
-  doSaveDraft(false)
+  await doSaveDraft(false)
 }
 
 function updatePreview() {
@@ -351,101 +352,84 @@ function onPaste(e: ClipboardEvent) {
   const html = e.clipboardData?.getData('text/html') || ''
   const text = e.clipboardData?.getData('text/plain') || ''
 
-  let cells: TableCell[][] | null = null
-
-  if (html.includes('<table')) {
-    cells = parseHtmlTableFromClipboard(html)
-  } else if (text.includes('\t')) {
-    cells = parseTextTable(text)
+  // Priority 1: structured HTML (from AI/web pages)
+  if (html && html.includes('<')) {
+    const result = parseHtmlToNodes(html)
+    const isEmpty = result.nodes.length === 1 && result.nodes[0]!.type === 'paragraph' && result.nodes[0]!.content === '导入内容为空'
+    if (result.nodes.length > 0 && !isEmpty) {
+      e.preventDefault()
+      // Attach pasted images to global image list for submit
+      result.images.forEach((img) => {
+        // images are already File objects with blob urls from parseHtmlToNodes
+      })
+      insertNodesAfterSelection(result.nodes)
+      ElMessage.success(`已粘贴 ${result.nodes.length} 个结构化块`)
+      return
+    }
   }
 
-  if (cells && cells.length > 0) {
-    e.preventDefault()
-    insertTableBlock(cells)
-    ElMessage.success('已粘贴为表格')
+  // Priority 2: markdown-like text
+  const trimmed = text.trim()
+  if (
+    trimmed.startsWith('#') ||
+    trimmed.startsWith('|') ||
+    trimmed.startsWith('>') ||
+    /^步骤\s*\d+\s*[：:]/.test(trimmed) ||
+    /【[^】]+】\s*>\s*【[^】]+】/.test(text)
+  ) {
+    const nodes = parseMarkdownToNodes(text)
+    const isEmpty = nodes.length === 1 && nodes[0]!.type === 'paragraph' && nodes[0]!.content === '导入内容为空'
+    if (nodes.length > 0 && !isEmpty) {
+      e.preventDefault()
+      insertNodesAfterSelection(nodes)
+      ElMessage.success(`已粘贴 ${nodes.length} 个结构化块`)
+      return
+    }
+  }
+
+  // Priority 3: tab-separated table
+  if (text.includes('\t')) {
+    const rows = text.split(/\r?\n/).filter((line) => line.trim() !== '')
+    const cells = rows.map((row) =>
+      row.split('\t').map((cell) => ({ content: cell.trim(), isMerged: false })),
+    )
+    if (cells.length > 0) {
+      e.preventDefault()
+      insertNodesAfterSelection([createNode('table', { cells })])
+      ElMessage.success('已粘贴为表格')
+    }
   }
 }
 
-function parseHtmlTableFromClipboard(html: string): TableCell[][] {
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(html, 'text/html')
-  const table = doc.querySelector('table')
-  if (!table) return []
+function insertNodesAfterSelection(nodes: DocNode[]) {
+  if (!store.selectedNodeId) {
+    nodes.forEach((n) => store.addNode(null, n))
+    return
+  }
+  const selected = store.selectedNode!
+  let parentId: string | null = null
+  let index = store.docTree.length
 
-  const rows = Array.from(table.querySelectorAll('tr'))
-  if (!rows.length) return []
-  const colCount = Math.max(...rows.map((r) => r.querySelectorAll('td, th').length))
-  if (!colCount) return []
-
-  const grid: (TableCell | null)[][] = Array.from({ length: rows.length }, () =>
-    Array.from({ length: colCount }, () => null),
-  )
-
-  rows.forEach((tr, r) => {
-    const tds = Array.from(tr.querySelectorAll('td, th'))
-    let c = 0
-    tds.forEach((td) => {
-      while (c < colCount && grid[r]![c]) c++
-      if (c >= colCount) return
-      const rowspan = parseInt(td.getAttribute('rowspan') || '1')
-      const colspan = parseInt(td.getAttribute('colspan') || '1')
-      const cell: TableCell = {
-        content: td.textContent?.trim() || '',
-        rowspan,
-        colspan,
-        isMerged: false,
+  const findParentId = (arr: DocNode[], id: string): string | null => {
+    for (const n of arr) {
+      if (n.children) {
+        if (n.children.some((c) => c.id === id)) return n.id
+        const deep = findParentId(n.children, id)
+        if (deep) return deep
       }
-      grid[r]![c] = cell
-      for (let i = 0; i < rowspan; i++) {
-        for (let j = 0; j < colspan; j++) {
-          if (i === 0 && j === 0) continue
-          if (grid[r + i]) {
-            grid[r + i]![c + j] = { content: '', isMerged: true }
-          }
-        }
-      }
-      c++
-    })
-  })
-
-  return grid.map((row) => row.map((cell) => cell || { content: '', isMerged: false }))
-}
-
-function parseTextTable(text: string): TableCell[][] {
-  const rows = text.split(/\r?\n/).filter((line) => line.trim() !== '')
-  return rows.map((row) =>
-    row.split('\t').map((cell) => ({ content: cell.trim(), isMerged: false })),
-  )
-}
-
-function insertTableBlock(cells: TableCell[][]) {
-  const tableNode = createNode('table', { cells })
-  if (store.selectedNodeId) {
-    const selected = store.selectedNode!
-    let parentId: string | null = null
-    let index = store.docTree.length
-
-    const findParentId = (arr: DocNode[], id: string): string | null => {
-      for (const n of arr) {
-        if (n.children) {
-          if (n.children.some((c) => c.id === id)) return n.id
-          const deep = findParentId(n.children, id)
-          if (deep) return deep
-        }
-      }
-      return null
     }
-    parentId = findParentId(store.docTree, selected.id)
-    if (parentId) {
-      const parent = store.allNodes.find((n) => n.id === parentId)
-      index = (parent?.children?.findIndex((c) => c.id === selected.id) ?? -1) + 1
-    } else {
-      index = store.docTree.findIndex((n) => n.id === selected.id) + 1
-    }
-    store.addNode(parentId, tableNode, index)
+    return null
+  }
+  parentId = findParentId(store.docTree, selected.id)
+  if (parentId) {
+    const parent = store.allNodes.find((n) => n.id === parentId)
+    index = (parent?.children?.findIndex((c) => c.id === selected.id) ?? -1) + 1
   } else {
-    store.addNode(null, tableNode)
+    index = store.docTree.findIndex((n) => n.id === selected.id) + 1
   }
+  nodes.forEach((n) => {
+    store.addNode(parentId, n, index++)
+  })
 }
 </script>
 
