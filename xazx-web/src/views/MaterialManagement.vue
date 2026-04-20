@@ -18,16 +18,8 @@ const searchKeyword = ref('')
 const isUploadDialogVisible = ref(false)
 
 const fetchMaterials = () => {
-  // Mock data fetching based on currentCategory.value
-  const commonData = [
-    { id: 1, name: 'Q1财务报告.pdf', size: '2.5MB', uploadTime: '2026-04-01', uploader: 'Admin', type: 'document' },
-    { id: 2, name: '企业文化介绍.docx', size: '150KB', uploadTime: '2026-04-02', uploader: 'User B', type: 'document' },
-    { id: 3, name: '产品宣传图.png', size: '1.2MB', uploadTime: '2026-04-02', uploader: 'User A', type: 'image' },
-    { id: 4, name: '年会集锦.jpg', size: '5.2MB', uploadTime: '2026-04-03', uploader: 'User A', type: 'image' },
-    { id: 5, name: '2026战略规划.pptx', size: '15MB', uploadTime: '2026-04-05', uploader: 'Super Admin', type: 'ppt' },
-    { id: 6, name: '新人培训大纲.ppt', size: '8MB', uploadTime: '2026-04-06', uploader: 'Admin', type: 'ppt' }
-  ]
-  tableData.value = commonData.filter(item => item.type === currentCategory.value)
+  // 真实数据将由后端 API 提供，当前显示空状态
+  tableData.value = []
 }
 
 watch(

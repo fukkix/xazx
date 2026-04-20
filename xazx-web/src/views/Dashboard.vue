@@ -1,32 +1,48 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { knowledgeApi } from '../services/knowledge'
 
-const tableData = ref([
-  {
-    name: 'Annual_Report_2023.pdf',
-    size: '4.2 MB',
-    category: 'Documents',
-    author: 'Sarah Jenkins',
-    date: 'Oct 12, 2023',
-    icon: 'Document'
-  },
-  {
-    name: 'Hero_Header_v2.png',
-    size: '12.8 MB',
-    category: 'Images',
-    author: 'David Chen',
-    date: 'Oct 11, 2023',
-    icon: 'Picture'
-  },
-  {
-    name: 'Q3_Pitch_Deck.pptx',
-    size: '25.1 MB',
-    category: 'PPTs',
-    author: 'Marcus Aurelius',
-    date: 'Oct 09, 2023',
-    icon: 'DataBoard'
+const totalMaterials = ref(0)
+const pendingReview = ref(0)
+const storageUsage = ref(0)
+const tableData = ref<any[]>([])
+const loading = ref(false)
+
+const fetchDashboardData = async () => {
+  loading.value = true
+  try {
+    // 获取知识库真实统计
+    const stats = await knowledgeApi.getStats()
+    totalMaterials.value = stats.total || 0
+    // 待审核内容、存储空间使用率后端暂无接口，保持为 0
+    pendingReview.value = 0
+    storageUsage.value = 0
+    // 平台资源列表：使用各知识域的页面作为资源展示
+    const domains = stats.domains || {}
+    const rows: any[] = []
+    let id = 1
+    for (const [domain, info] of Object.entries(domains)) {
+      rows.push({
+        id: id++,
+        name: `${domain} 知识库`,
+        size: `${info.total} 篇`,
+        category: 'Documents',
+        author: '系统自动统计',
+        date: stats.last_updated,
+        icon: 'Document'
+      })
+    }
+    tableData.value = rows
+  } catch (e) {
+    console.error('获取仪表盘数据失败:', e)
+  } finally {
+    loading.value = false
   }
-])
+}
+
+onMounted(() => {
+  fetchDashboardData()
+})
 </script>
 
 <template>
@@ -47,7 +63,7 @@ const tableData = ref([
           <span class="text-xs font-bold text-primary px-2 py-1 bg-primary/10 rounded-full">+12.5%</span>
         </div>
         <h3 class="text-on-surface-variant font-bold text-sm uppercase tracking-widest mb-1">资料总数量</h3>
-        <div class="text-4xl font-black text-on-surface">24,892</div>
+        <div class="text-4xl font-black text-on-surface">{{ totalMaterials }}</div>
       </div>
 
       <div class="bg-surface-container-low rounded-xl p-8 transition-all hover:shadow-md border-l-4 border-tertiary">
@@ -58,7 +74,7 @@ const tableData = ref([
           <span class="text-xs font-bold text-error px-2 py-1 bg-error/10 rounded-full">高优先级</span>
         </div>
         <h3 class="text-on-surface-variant font-bold text-sm uppercase tracking-widest mb-1">待审核内容</h3>
-        <div class="text-4xl font-black text-on-surface">156</div>
+        <div class="text-4xl font-black text-on-surface">{{ pendingReview }}</div>
       </div>
 
       <div class="bg-primary text-on-primary rounded-xl p-8 transition-all shadow-xl relative overflow-hidden">
@@ -69,9 +85,9 @@ const tableData = ref([
             </span>
           </div>
           <h3 class="text-primary-fixed-dim font-bold text-sm uppercase tracking-widest mb-1">存储空间使用率</h3>
-          <div class="text-4xl font-black mb-4">82.4%</div>
+          <div class="text-4xl font-black mb-4">{{ storageUsage }}%</div>
           <div class="w-full bg-white/20 h-2 rounded-full overflow-hidden">
-            <div class="bg-white h-full" style="width: 82.4%"></div>
+            <div class="bg-white h-full" :style="{ width: storageUsage + '%' }"></div>
           </div>
         </div>
       </div>
@@ -91,7 +107,7 @@ const tableData = ref([
         </div>
       </div>
 
-      <el-table :data="tableData" style="width: 100%" row-class-name="hover:bg-surface-container-low transition-colors group cursor-pointer">
+      <el-table :data="tableData" v-loading="loading" style="width: 100%" row-class-name="hover:bg-surface-container-low transition-colors group cursor-pointer">
         <el-table-column label="资料名称" min-width="200">
           <template #default="scope">
             <div class="flex items-center gap-3">
@@ -123,8 +139,8 @@ const tableData = ref([
       </el-table>
 
       <div class="mt-4 flex justify-between items-center">
-        <span class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">当前显示 3 条，共 2,410 条记录</span>
-        <el-pagination background layout="prev, pager, next" :total="2410" :page-size="10" />
+        <span class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">当前显示 {{ tableData.length }} 条，共 {{ tableData.length }} 条记录</span>
+        <el-pagination background layout="prev, pager, next" :total="tableData.length" :page-size="10" />
       </div>
     </section>
   </main>
