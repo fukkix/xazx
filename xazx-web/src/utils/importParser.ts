@@ -22,6 +22,17 @@ export function cleanText(text: string): string {
     .trim()
 }
 
+function cleanCellText(text: string): string {
+  return text
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/width="[\d.]+in"/g, '')
+    .replace(/height="[\d.]+in"/g, '')
+    .trim()
+}
+
 function parseHtmlTable(tableEl: HTMLTableElement): TableCell[][] {
   const rows = Array.from(tableEl.querySelectorAll('tr'))
   if (!rows.length) return []
@@ -40,8 +51,9 @@ function parseHtmlTable(tableEl: HTMLTableElement): TableCell[][] {
       if (c >= colCount) return
       const rowspan = parseInt(cellEl.getAttribute('rowspan') || '1')
       const colspan = parseInt(cellEl.getAttribute('colspan') || '1')
+      // 保留单元格内的换行（Excel 单元格内换行）
       const cell: TableCell = {
-        content: cleanText(cellEl.textContent || ''),
+        content: cleanCellText(cellEl.textContent || ''),
         rowspan,
         colspan,
         isMerged: false,
@@ -134,8 +146,15 @@ export function parseHtmlToNodes(html: string): { nodes: DocNode[]; images: File
     parseElement(child, nodes)
   }
 
+  // 过滤 Excel 产生的空节点（如空段落、只有 &nbsp; 的段落）
+  const filtered = nodes.filter((n) => {
+    if (n.type === 'paragraph' && !n.content?.trim()) return false
+    if (n.type === 'callout' && !n.content?.trim()) return false
+    return true
+  })
+
   return {
-    nodes: nodes.length ? nodes : [createNode('paragraph', { content: '导入内容为空' })],
+    nodes: filtered.length ? filtered : [createNode('paragraph', { content: '导入内容为空' })],
     images,
   }
 }

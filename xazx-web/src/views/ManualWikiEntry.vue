@@ -338,13 +338,101 @@ function onCanvasClick(e: MouseEvent) {
   }
 }
 
+// ========== 粘贴辅助函数 ==========
+
+function isExcelTabData(text: string): boolean {
+  if (!text.includes('\t')) return false
+  const rows = text.split(/\r?\n/).filter((line) => line.trim().length > 0)
+  if (rows.length < 1) return false
+  // 至少有一行包含多个 tab（多列）
+  return rows.some((row) => row.split('\t').length >= 2)
+}
+
+function parseTabSeparatedTable(text: string): TableCell[][] {
+  // Excel 复制时末尾可能有空行，过滤掉
+  const rawRows = text.split(/\r?\n/)
+  const rows: string[] = []
+  let foundNonEmpty = false
+  for (let i = rawRows.length - 1; i >= 0; i--) {
+    const trimmed = rawRows[i]!.trim()
+    if (trimmed.length > 0) {
+      foundNonEmpty = true
+    }
+    if (foundNonEmpty) {
+      rows.unshift(rawRows[i]!)
+    }
+  }
+
+  if (rows.length === 0) return []
+
+  // 计算最大列数
+  const maxCols = Math.max(...rows.map((r) => r.split('\t').length))
+
+  return rows.map((row) => {
+    const cells = row.split('\t')
+    // 补齐列数（Excel 有时最后一列的 tab 后面没有内容）
+    while (cells.length < maxCols) {
+      cells.push('')
+    }
+    return cells.map((cell) => {
+      const trimmed = cell.trim()
+      // Excel 空单元格通常复制为 '' 或 '&nbsp;'
+      return {
+        content: trimmed.replace(/&nbsp;/gi, ''),
+        isMerged: false,
+      }
+    })
+  })
+}
+
 function onPaste(e: ClipboardEvent) {
   const html = e.clipboardData?.getData('text/html') || ''
   const text = e.clipboardData?.getData('text/plain') || ''
 
+  // 优先级 0: Excel 多行 tab 数据（最优先，避免被 markdown 误匹配）
+  if (text && isExcelTabData(text)) {
+    const cells = parseTabSeparatedTable(text)
+    if (cells.length > 0 && cells[0]!.length > 0) {
+      e.preventDefault()
+      insertNodesAfterSelection([createNode('table', { cells })])
+      ElMessage.success(`已从 Excel 粘贴 ${cells.length} 行 × ${cells[0]!.length} 列表格`)
+      return
+    }
+  }
+
+  // 优先级 1: HTML 中包含 <table>（从网页或 Excel HTML 粘贴）
+  if (html.includes('<table')) {
+    const result = parseHtmlToNodes(html)
+    // 提取 table 和 heading 节点，过滤掉空段落
+    const meaningful = result.nodes.filter(
+      (n) =>
+        n.type === 'table' ||
+        n.type === 'heading' ||
+        n.type === 'image' ||
+        (n.type === 'paragraph' && n.content?.trim()) ||
+        (n.type === 'callout' && n.content?.trim()),
+    )
+    if (meaningful.length > 0) {
+      e.preventDefault()
+      insertNodesAfterSelection(meaningful)
+      const tableCount = meaningful.filter((n) => n.type === 'table').length
+      if (tableCount > 0) {
+        ElMessage.success(`已粘贴 ${tableCount} 个表格`)
+      } else {
+        ElMessage.success(`已粘贴 ${meaningful.length} 个结构化块`)
+      }
+      return
+    }
+    // 如果没有有意义的 table，fallback 到 text
+  }
+
+  // 优先级 2: 普通 HTML
   if (html && html.includes('<')) {
     const result = parseHtmlToNodes(html)
-    const isEmpty = result.nodes.length === 1 && result.nodes[0]!.type === 'paragraph' && result.nodes[0]!.content === '导入内容为空'
+    const isEmpty =
+      result.nodes.length === 1 &&
+      result.nodes[0]!.type === 'paragraph' &&
+      result.nodes[0]!.content === '导入内容为空'
     if (result.nodes.length > 0 && !isEmpty) {
       e.preventDefault()
       insertNodesAfterSelection(result.nodes)
@@ -353,6 +441,7 @@ function onPaste(e: ClipboardEvent) {
     }
   }
 
+  // 优先级 3: markdown-like text
   const trimmed = text.trim()
   if (
     trimmed.startsWith('#') ||
@@ -362,7 +451,10 @@ function onPaste(e: ClipboardEvent) {
     /【[^】]+】\s*>\s*【[^】]+】/.test(text)
   ) {
     const nodes = parseMarkdownToNodes(text)
-    const isEmpty = nodes.length === 1 && nodes[0]!.type === 'paragraph' && nodes[0]!.content === '导入内容为空'
+    const isEmpty =
+      nodes.length === 1 &&
+      nodes[0]!.type === 'paragraph' &&
+      nodes[0]!.content === '导入内容为空'
     if (nodes.length > 0 && !isEmpty) {
       e.preventDefault()
       insertNodesAfterSelection(nodes)
@@ -371,11 +463,9 @@ function onPaste(e: ClipboardEvent) {
     }
   }
 
+  // 优先级 4: 单行 tab 分隔（已被优先级0覆盖多行，这里处理单行多列）
   if (text.includes('\t')) {
-    const rows = text.split(/\r?\n/).filter((line) => line.trim() !== '')
-    const cells = rows.map((row) =>
-      row.split('\t').map((cell) => ({ content: cell.trim(), isMerged: false })),
-    )
+    const cells = parseTabSeparatedTable(text)
     if (cells.length > 0) {
       e.preventDefault()
       insertNodesAfterSelection([createNode('table', { cells })])
