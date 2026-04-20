@@ -34,6 +34,8 @@ const showWordImporter = ref(false)
 const showLinkPopover = ref(false)
 const linkPopoverPos = ref({ x: 0, y: 0 })
 const activeTab = ref('properties')
+const isDragOver = ref(false)
+let dragCounter = 0
 const isSubmitting = ref(false)
 const previewMd = ref('')
 const previewHtml = ref('')
@@ -418,6 +420,141 @@ function insertFirstBlock(type: DocNode['type']) {
   const node = createNode(type)
   store.addNode(null, node)
 }
+
+// ========== 拖拽上传 ==========
+
+function onDragEnter(e: DragEvent) {
+  e.preventDefault()
+  dragCounter++
+  if (e.dataTransfer?.types.includes('Files')) {
+    isDragOver.value = true
+  }
+}
+
+function onDragOver(e: DragEvent) {
+  e.preventDefault()
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'copy'
+  }
+}
+
+function onDragLeave(e: DragEvent) {
+  e.preventDefault()
+  dragCounter--
+  if (dragCounter <= 0) {
+    isDragOver.value = false
+    dragCounter = 0
+  }
+}
+
+function isImageFile(file: File): boolean {
+  return file.type.startsWith('image/')
+}
+
+function createImageNodeFromFile(file: File): DocNode {
+  const url = URL.createObjectURL(file)
+  return createNode('image', {
+    content: file.name,
+    url,
+    file,
+    alt: file.name,
+  })
+}
+
+async function tryGetImageFromDataTransfer(dataTransfer: DataTransfer): Promise<DocNode[]> {
+  const nodes: DocNode[] = []
+
+  // 1. 优先处理文件（从桌面/文件夹拖拽）
+  const files = Array.from(dataTransfer.files)
+  for (const file of files) {
+    if (isImageFile(file)) {
+      nodes.push(createImageNodeFromFile(file))
+    }
+  }
+  if (nodes.length > 0) return nodes
+
+  // 2. 尝试从 dataTransfer.items 获取（某些浏览器）
+  const items = Array.from(dataTransfer.items)
+  for (const item of items) {
+    if (item.kind === 'file' && item.type.startsWith('image/')) {
+      const file = item.getAsFile()
+      if (file) nodes.push(createImageNodeFromFile(file))
+    }
+  }
+  if (nodes.length > 0) return nodes
+
+  // 3. 尝试解析 HTML 中的 img 标签（从网页拖拽）
+  const html = dataTransfer.getData('text/html')
+  if (html) {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(html, 'text/html')
+    const imgs = Array.from(doc.querySelectorAll('img'))
+    for (const img of imgs) {
+      const src = img.getAttribute('src')
+      if (src) {
+        if (src.startsWith('data:')) {
+          // data URL -> File
+          try {
+            const resp = await fetch(src)
+            const blob = await resp.blob()
+            const file = new File([blob], `pasted_${Date.now()}.png`, { type: blob.type || 'image/png' })
+            nodes.push(createImageNodeFromFile(file))
+          } catch {
+            // fallback: 存为 url
+            nodes.push(createNode('image', { content: src, url: src }))
+          }
+        } else {
+          nodes.push(createNode('image', { content: src, url: src }))
+        }
+      }
+    }
+  }
+
+  // 4. 尝试纯文本 URL（某些应用会只提供 URL）
+  const text = dataTransfer.getData('text/plain')
+  if (text && nodes.length === 0) {
+    const urlPattern = /https?:\/\/[^\s]+\.(?:png|jpg|jpeg|gif|webp|svg)/i
+    const match = text.match(urlPattern)
+    if (match) {
+      nodes.push(createNode('image', { content: match[0], url: match[0] }))
+    }
+  }
+
+  return nodes
+}
+
+async function onDrop(e: DragEvent) {
+  e.preventDefault()
+  dragCounter = 0
+  isDragOver.value = false
+
+  if (!e.dataTransfer) return
+
+  const nodes = await tryGetImageFromDataTransfer(e.dataTransfer)
+
+  if (nodes.length === 0) {
+    // 可能拖拽的是非图片文件，尝试作为文档导入
+    const files = Array.from(e.dataTransfer.files)
+    const docxFile = files.find((f) => f.name.endsWith('.docx'))
+    if (docxFile) {
+      showWordImporter.value = true
+      // 将文件传递给 WordImporter 需要额外的逻辑，这里先提示用户
+      ElMessage.info('检测到 Word 文档，请使用导入功能')
+      return
+    }
+    ElMessage.warning('未识别到可处理的图片，请拖拽图片文件')
+    return
+  }
+
+  // 插入到文档末尾或选中节点之后
+  if (store.selectedNodeId) {
+    insertNodesAfterSelection(nodes)
+  } else {
+    nodes.forEach((n) => store.addNode(null, n))
+  }
+
+  ElMessage.success(`已添加 ${nodes.length} 张图片`)
+}
 </script>
 
 <template>
@@ -503,7 +640,27 @@ function insertFirstBlock(type: DocNode['type']) {
         </div>
 
         <!-- 中间画布 -->
-        <div class="flex-1 overflow-auto pr-2" @click="onCanvasClick" @paste="onPaste">
+        <div
+          class="flex-1 overflow-auto pr-2 relative transition-all"
+          :class="isDragOver ? 'bg-primary/5 ring-2 ring-primary/30 ring-inset rounded-lg' : ''"
+          @click="onCanvasClick"
+          @paste="onPaste"
+          @dragenter="onDragEnter"
+          @dragover="onDragOver"
+          @dragleave="onDragLeave"
+          @drop="onDrop"
+        >
+          <!-- 拖拽上传遮罩 -->
+          <div
+            v-if="isDragOver"
+            class="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none bg-primary/5 rounded-lg"
+          >
+            <div class="w-16 h-16 rounded-2xl bg-white shadow-lg flex items-center justify-center mb-3">
+              <el-icon :size="32" class="text-primary"><Upload /></el-icon>
+            </div>
+            <p class="text-base font-medium text-primary">释放以添加图片</p>
+            <p class="text-xs text-secondary mt-1">支持拖拽图片文件、网页图片</p>
+          </div>
           <!-- 有内容时显示 block 列表 -->
           <div v-if="store.docTree.length > 0" class="space-y-1 min-h-full pb-20">
             <BlockRenderer
@@ -540,7 +697,8 @@ function insertFirstBlock(type: DocNode['type']) {
               </el-button>
             </div>
             <div class="text-xs text-secondary space-y-1 max-w-sm">
-              <p>💡 提示：也可以直接粘贴 Word、Excel、Markdown 或网页内容</p>
+              <p>💡 直接拖拽图片文件或网页图片到画布即可添加</p>
+              <p>💡 也可以粘贴 Word、Excel、Markdown 或网页内容</p>
               <p>💡 快捷键：Ctrl+S 保存草稿，Ctrl+Z 撤销，Backspace 删除选中块</p>
             </div>
           </div>
