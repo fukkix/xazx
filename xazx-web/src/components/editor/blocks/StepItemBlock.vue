@@ -39,6 +39,11 @@ function onCompositionEnd(e: Event) {
   const target = e.target as HTMLElement
   emit('update', target.innerText)
 }
+
+function onBlur(e: Event) {
+  const target = e.target as HTMLElement
+  emit('update', target.innerText)
+}
 </script>
 
 <template>
@@ -53,6 +58,7 @@ function onCompositionEnd(e: Event) {
       @input="onInput"
       @compositionstart="onCompositionStart"
       @compositionend="onCompositionEnd"
+      @blur="onBlur"
     />
     <el-button
       class="opacity-0 group-hover:opacity-100 transition-opacity"

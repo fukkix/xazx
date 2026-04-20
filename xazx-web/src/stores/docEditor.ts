@@ -105,8 +105,17 @@ function nodeToMarkdown(node: DocNode, depth = 0): string {
       return `${indent}![${node.alt || node.content || 'image'}](${node.url || node.content || ''})\n\n`
     case 'path':
       return `${indent}${node.content || ''}\n\n`
-    case 'callout':
-      return `${indent}> ⚠️ ${node.content || ''}\n\n`
+    case 'callout': {
+      const typeIcons: Record<string, string> = {
+        info: 'ℹ️',
+        warning: '⚠️',
+        success: '✅',
+        danger: '❌',
+        tip: '💡',
+      }
+      const icon = typeIcons[node.attrs?.calloutType as string] || '⚠️'
+      return `${indent}> ${icon} ${node.content || ''}\n\n`
+    }
     case 'feature-matrix': {
       if (!node.categories || node.categories.length === 0) return ''
       const versions = node.versions || []
@@ -396,6 +405,76 @@ export const useDocEditorStore = defineStore('docEditor', () => {
     return historyIndex.value < history.value.length - 1
   }
 
+  // ========== 节点位置操作 ==========
+
+  interface NodePosition {
+    parentId: string | null
+    index: number
+    depth: number
+  }
+
+  function getNodePosition(nodeId: string): NodePosition | null {
+    const find = (nodes: DocNode[], parentId: string | null, depth: number): NodePosition | null => {
+      for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i]!.id === nodeId) {
+          return { parentId, index: i, depth }
+        }
+        if (nodes[i]!.children) {
+          const found = find(nodes[i]!.children!, nodes[i]!.id, depth + 1)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    return find(docTree.value, null, 0)
+  }
+
+  function getSiblings(nodeId: string): DocNode[] | null {
+    const pos = getNodePosition(nodeId)
+    if (!pos) return null
+    if (!pos.parentId) return docTree.value
+    const parent = findNodeById(docTree.value, pos.parentId)
+    return parent?.children || null
+  }
+
+  function moveNodeUp(nodeId: string) {
+    const pos = getNodePosition(nodeId)
+    if (!pos || pos.index <= 0) return
+    const siblings = getSiblings(nodeId)
+    if (!siblings) return
+    snapshot()
+    const [node] = siblings.splice(pos.index, 1)
+    if (!node) return
+    siblings.splice(pos.index - 1, 0, node)
+  }
+
+  function moveNodeDown(nodeId: string) {
+    const pos = getNodePosition(nodeId)
+    if (!pos) return
+    const siblings = getSiblings(nodeId)
+    if (!siblings || pos.index >= siblings.length - 1) return
+    snapshot()
+    const [node] = siblings.splice(pos.index, 1)
+    if (!node) return
+    siblings.splice(pos.index + 1, 0, node)
+  }
+
+  function insertAfter(nodeId: string, type: DocNode['type']) {
+    const pos = getNodePosition(nodeId)
+    if (!pos) return
+    const newNode = createNode(type)
+    snapshot()
+    if (!pos.parentId) {
+      docTree.value.splice(pos.index + 1, 0, newNode)
+    } else {
+      const parent = findNodeById(docTree.value, pos.parentId)
+      if (parent && parent.children) {
+        parent.children.splice(pos.index + 1, 0, newNode)
+      }
+    }
+    selectedNodeId.value = newNode.id
+  }
+
   return {
     docTree,
     selectedNodeId,
@@ -418,6 +497,11 @@ export const useDocEditorStore = defineStore('docEditor', () => {
     loadDraft,
     clearDraft,
     hasDraft,
+    getNodePosition,
+    getSiblings,
+    moveNodeUp,
+    moveNodeDown,
+    insertAfter,
   }
 })
 

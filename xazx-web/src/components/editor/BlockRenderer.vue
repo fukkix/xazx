@@ -9,6 +9,7 @@ import ImageBlock from './blocks/ImageBlock.vue'
 import PathBlock from './blocks/PathBlock.vue'
 import CalloutBlock from './blocks/CalloutBlock.vue'
 import FeatureMatrixBlock from './blocks/FeatureMatrixBlock.vue'
+import BlockActions from './BlockActions.vue'
 
 const props = defineProps<{
   node: DocNode
@@ -20,6 +21,8 @@ const depth = computed(() => props.depth || 0)
 
 <template>
   <div :id="`block-${node.id}`" class="block-wrapper group relative">
+    <BlockActions :node="node" />
+
     <HeadingBlock v-if="node.type === 'heading'" :node="node" :depth="depth" />
     <ParagraphBlock v-else-if="node.type === 'paragraph'" :node="node" />
     <StepsBlock v-else-if="node.type === 'steps'" :node="node" />

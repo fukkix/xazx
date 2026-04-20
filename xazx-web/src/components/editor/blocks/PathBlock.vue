@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useDocEditorStore } from '@/stores/docEditor'
 import type { DocNode } from '@/types/editor'
+import { DEFAULT_PATHS } from '@/types/editor'
 
 const props = defineProps<{
   node: DocNode
@@ -11,6 +12,7 @@ const store = useDocEditorStore()
 const isSelected = computed(() => store.selectedNodeId === props.node.id)
 const contentRef = ref<HTMLElement | null>(null)
 const isComposing = ref(false)
+const showDropdown = ref(false)
 
 watch(
   () => props.node.content,
@@ -46,11 +48,20 @@ function onBlur(e: Event) {
   const target = e.target as HTMLElement
   store.updateNode(props.node.id, { content: target.innerText })
 }
+
+function selectPath(path: string) {
+  store.updateNode(props.node.id, { content: path })
+  showDropdown.value = false
+}
+
+function toggleDropdown() {
+  showDropdown.value = !showDropdown.value
+}
 </script>
 
 <template>
   <div
-    class="py-2 px-3 rounded-lg border-2 cursor-text transition-all"
+    class="py-2 px-3 rounded-lg border-2 transition-all"
     :class="isSelected ? 'border-primary bg-primary/5' : 'border-transparent hover:border-primary/20'"
     @click.stop="onClick"
   >
@@ -65,6 +76,23 @@ function onBlur(e: Event) {
         @compositionend="onCompositionEnd"
         @blur="onBlur"
       />
+      <el-dropdown trigger="click" @command="selectPath" @click.stop>
+        <el-button size="small" text @click.stop="toggleDropdown">
+          <el-icon><ArrowDown /></el-icon>
+        </el-button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item
+              v-for="path in DEFAULT_PATHS"
+              :key="path"
+              :command="path"
+            >
+              {{ path }}
+            </el-dropdown-item>
+            <el-dropdown-item divided command="">清除</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
     </div>
   </div>
 </template>

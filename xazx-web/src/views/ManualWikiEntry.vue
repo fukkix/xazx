@@ -206,7 +206,6 @@ function saveFragment() {
 
 function insertFragment(nodes: DocNode[]) {
   if (!store.selectedNodeId) return
-  // Insert after selected node
   const selected = store.selectedNode!
   let parentId: string | null = null
   let index = store.docTree.length
@@ -243,16 +242,6 @@ function insertFragment(nodes: DocNode[]) {
 
 async function onWordImported(nodes: DocNode[], images: File[]) {
   store.initDocument(nodes)
-  // Attach images to image blocks
-  nodes.forEach((node) => {
-    function walk(n: DocNode) {
-      if (n.type === 'image' && n.file) {
-        // already set in importer
-      }
-      n.children?.forEach(walk)
-    }
-    walk(node)
-  })
   await doSaveDraft(false)
 }
 
@@ -339,7 +328,6 @@ function goBack() {
 }
 
 function onCanvasClick(e: MouseEvent) {
-  // Check for [[ link trigger in contenteditable (simplified)
   const target = e.target as HTMLElement
   if (target.isContentEditable && target.innerText.includes('[[')) {
     const rect = target.getBoundingClientRect()
@@ -352,23 +340,17 @@ function onPaste(e: ClipboardEvent) {
   const html = e.clipboardData?.getData('text/html') || ''
   const text = e.clipboardData?.getData('text/plain') || ''
 
-  // Priority 1: structured HTML (from AI/web pages)
   if (html && html.includes('<')) {
     const result = parseHtmlToNodes(html)
     const isEmpty = result.nodes.length === 1 && result.nodes[0]!.type === 'paragraph' && result.nodes[0]!.content === '导入内容为空'
     if (result.nodes.length > 0 && !isEmpty) {
       e.preventDefault()
-      // Attach pasted images to global image list for submit
-      result.images.forEach((img) => {
-        // images are already File objects with blob urls from parseHtmlToNodes
-      })
       insertNodesAfterSelection(result.nodes)
       ElMessage.success(`已粘贴 ${result.nodes.length} 个结构化块`)
       return
     }
   }
 
-  // Priority 2: markdown-like text
   const trimmed = text.trim()
   if (
     trimmed.startsWith('#') ||
@@ -387,7 +369,6 @@ function onPaste(e: ClipboardEvent) {
     }
   }
 
-  // Priority 3: tab-separated table
   if (text.includes('\t')) {
     const rows = text.split(/\r?\n/).filter((line) => line.trim() !== '')
     const cells = rows.map((row) =>
@@ -431,6 +412,12 @@ function insertNodesAfterSelection(nodes: DocNode[]) {
     store.addNode(parentId, n, index++)
   })
 }
+
+// 空画布快捷插入
+function insertFirstBlock(type: DocNode['type']) {
+  const node = createNode(type)
+  store.addNode(null, node)
+}
 </script>
 
 <template>
@@ -448,16 +435,16 @@ function insertNodesAfterSelection(nodes: DocNode[]) {
       </div>
     </div>
 
-    <!-- 来源信息 -->
+    <!-- 来源信息 + 标题 -->
     <el-card shadow="hover">
-      <template #header><span class="font-semibold">来源信息</span></template>
+      <template #header><span class="font-semibold">页面信息</span></template>
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
-          <label class="block text-xs text-secondary mb-1">来源文件</label>
-          <el-input v-model="sourceFile" placeholder="可选，来源文件名" />
+          <label class="block text-xs text-secondary mb-1">页面标题 <span class="text-red-500">*</span></label>
+          <el-input v-model="title" placeholder="输入页面标题" maxlength="100" show-word-limit />
         </div>
         <div>
-          <label class="block text-xs text-secondary mb-1">知识域 *</label>
+          <label class="block text-xs text-secondary mb-1">知识域 <span class="text-red-500">*</span></label>
           <el-select v-model="domain" class="w-full">
             <el-option v-for="d in domainOptions" :key="d" :label="d" :value="d" />
           </el-select>
@@ -467,8 +454,34 @@ function insertNodesAfterSelection(nodes: DocNode[]) {
           <el-input v-model="productLine" placeholder="可选，如 WAF、动态防御" />
         </div>
         <div>
-          <label class="block text-xs text-secondary mb-1">页面标题 *</label>
-          <el-input v-model="title" placeholder="输入页面标题" maxlength="100" show-word-limit />
+          <label class="block text-xs text-secondary mb-1">来源文件</label>
+          <el-input v-model="sourceFile" placeholder="可选，来源文件名" />
+        </div>
+      </div>
+
+      <el-divider class="my-4" />
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs text-secondary mb-1">摘要</label>
+          <el-input
+            v-model="summary"
+            type="textarea"
+            :rows="2"
+            placeholder="用一句话概括页面内容（200字以内）"
+            maxlength="200"
+            show-word-limit
+          />
+        </div>
+        <div>
+          <label class="block text-xs text-secondary mb-1">关键词（逗号分隔）</label>
+          <el-input v-model="keywords" placeholder="如：WAF, 防火墙, 部署" />
+        </div>
+        <div>
+          <label class="block text-xs text-secondary mb-1">适用受众</label>
+          <el-select v-model="audience" multiple class="w-full">
+            <el-option v-for="a in audienceOptions" :key="a" :label="a" :value="a" />
+          </el-select>
         </div>
       </div>
     </el-card>
@@ -491,13 +504,45 @@ function insertNodesAfterSelection(nodes: DocNode[]) {
 
         <!-- 中间画布 -->
         <div class="flex-1 overflow-auto pr-2" @click="onCanvasClick" @paste="onPaste">
-          <div class="space-y-1 min-h-full pb-20">
+          <!-- 有内容时显示 block 列表 -->
+          <div v-if="store.docTree.length > 0" class="space-y-1 min-h-full pb-20">
             <BlockRenderer
               v-for="node in store.docTree"
               :key="node.id"
               :node="node"
               :depth="0"
             />
+          </div>
+
+          <!-- 空画布引导 -->
+          <div v-else class="flex flex-col items-center justify-center h-full text-center space-y-6">
+            <div class="w-20 h-20 rounded-2xl bg-surface-container-low flex items-center justify-center">
+              <el-icon :size="40" class="text-secondary/40"><Document /></el-icon>
+            </div>
+            <div>
+              <p class="text-lg font-medium text-on-surface mb-1">开始创建 Wiki 页面</p>
+              <p class="text-sm text-secondary max-w-md">
+                从下方选择一种方式开始，或使用顶部工具栏添加内容块
+              </p>
+            </div>
+            <div class="flex flex-wrap items-center justify-center gap-3">
+              <el-button @click="insertFirstBlock('heading')">
+                <el-icon class="mr-1"><Document /></el-icon>添加标题
+              </el-button>
+              <el-button @click="insertFirstBlock('paragraph')">
+                <el-icon class="mr-1"><EditPen /></el-icon>添加段落
+              </el-button>
+              <el-button @click="showWordImporter = true">
+                <el-icon class="mr-1"><Upload /></el-icon>导入文档
+              </el-button>
+              <el-button @click="insertFirstBlock('table')">
+                <el-icon class="mr-1"><Grid /></el-icon>添加表格
+              </el-button>
+            </div>
+            <div class="text-xs text-secondary space-y-1 max-w-sm">
+              <p>💡 提示：也可以直接粘贴 Word、Excel、Markdown 或网页内容</p>
+              <p>💡 快捷键：Ctrl+S 保存草稿，Ctrl+Z 撤销，Backspace 删除选中块</p>
+            </div>
           </div>
         </div>
 

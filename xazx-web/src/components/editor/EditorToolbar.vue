@@ -20,29 +20,12 @@ function insertBlock(type: DocNode['type']) {
   let index = store.docTree.length
 
   if (selected) {
-    // If selected is heading, insert inside it
-    if (selected.type === 'heading') {
-      parentId = selected.id
-      index = selected.children?.length || 0
-    } else {
-      // Find parent of selected
-      const findParentId = (nodes: DocNode[], id: string): string | null => {
-        for (const n of nodes) {
-          if (n.children) {
-            if (n.children.some((c) => c.id === id)) return n.id
-            const deep = findParentId(n.children, id)
-            if (deep) return deep
-          }
-        }
-        return null
-      }
-      parentId = findParentId(store.docTree, selected.id)
-      if (parentId) {
-        const parent = store.docTree.find((n) => n.id === parentId) || store.allNodes.find((n) => n.id === parentId)
-        index = (parent?.children?.findIndex((c) => c.id === selected.id) ?? -1) + 1
-      } else {
-        index = store.docTree.findIndex((n) => n.id === selected.id) + 1
-      }
+    // Find the top-level parent (or the node itself if it's top-level)
+    const pos = store.getNodePosition(selected.id)
+    if (pos) {
+      // Insert after the selected node at the same level
+      parentId = pos.parentId
+      index = pos.index + 1
     }
   }
 
@@ -51,8 +34,18 @@ function insertBlock(type: DocNode['type']) {
 }
 
 function insertHeading() {
+  const selected = store.selectedNode
+  let index = store.docTree.length
+
+  if (selected) {
+    const pos = store.getNodePosition(selected.id)
+    if (pos) {
+      index = pos.index + 1
+    }
+  }
+
   const node = createNode('heading', { level: 2, content: '新标题' })
-  store.addNode(null, node, store.docTree.length)
+  store.addNode(null, node, index)
 }
 </script>
 
@@ -60,29 +53,55 @@ function insertHeading() {
   <div class="flex items-center justify-between gap-3 flex-wrap">
     <div class="flex items-center gap-2 flex-wrap">
       <el-button-group>
-        <el-button size="small" :disabled="!canUndo" @click="store.undo">撤销</el-button>
-        <el-button size="small" :disabled="!canRedo" @click="store.redo">重做</el-button>
+        <el-button size="small" :disabled="!canUndo" @click="store.undo">
+          <el-icon class="mr-0.5"><ArrowLeft /></el-icon>撤销
+        </el-button>
+        <el-button size="small" :disabled="!canRedo" @click="store.redo">
+          <el-icon class="mr-0.5"><ArrowRight /></el-icon>重做
+        </el-button>
       </el-button-group>
 
       <el-divider direction="vertical" />
 
-      <el-button size="small" @click="insertHeading">+ 标题</el-button>
-      <el-button size="small" @click="insertBlock('paragraph')">+ 段落</el-button>
-      <el-button size="small" @click="insertBlock('steps')">+ 步骤</el-button>
-      <el-button size="small" @click="insertBlock('table')">+ 表格</el-button>
-      <el-button size="small" @click="insertBlock('image')">+ 图片</el-button>
-      <el-button size="small" @click="insertBlock('path')">+ 路径</el-button>
-      <el-button size="small" @click="insertBlock('callout')">+ 提示</el-button>
-      <el-button size="small" @click="insertBlock('feature-matrix')">+ 功能矩阵</el-button>
+      <el-button size="small" @click="insertHeading">
+        <el-icon class="mr-0.5"><Document /></el-icon>标题
+      </el-button>
+      <el-button size="small" @click="insertBlock('paragraph')">
+        <el-icon class="mr-0.5"><EditPen /></el-icon>段落
+      </el-button>
+      <el-button size="small" @click="insertBlock('steps')">
+        <el-icon class="mr-0.5"><List /></el-icon>步骤
+      </el-button>
+      <el-button size="small" @click="insertBlock('table')">
+        <el-icon class="mr-0.5"><Grid /></el-icon>表格
+      </el-button>
+      <el-button size="small" @click="insertBlock('image')">
+        <el-icon class="mr-0.5"><Picture /></el-icon>图片
+      </el-button>
+      <el-button size="small" @click="insertBlock('path')">
+        <el-icon class="mr-0.5"><Link /></el-icon>路径
+      </el-button>
+      <el-button size="small" @click="insertBlock('callout')">
+        <el-icon class="mr-0.5"><WarningFilled /></el-icon>提示
+      </el-button>
+      <el-button size="small" @click="insertBlock('feature-matrix')">
+        <el-icon class="mr-0.5"><Trophy /></el-icon>功能矩阵
+      </el-button>
 
       <el-divider direction="vertical" />
 
-      <el-button size="small" type="info" plain @click="emit('import-word')">导入文档</el-button>
+      <el-button size="small" type="info" plain @click="emit('import-word')">
+        <el-icon class="mr-0.5"><Upload /></el-icon>导入文档
+      </el-button>
     </div>
 
     <div class="flex items-center gap-2">
-      <el-button size="small" @click="emit('export-md')">导出 Markdown</el-button>
-      <el-button size="small" @click="emit('export-html')">导出 HTML</el-button>
+      <el-button size="small" @click="emit('export-md')">
+        <el-icon class="mr-0.5"><Download /></el-icon>导出 Markdown
+      </el-button>
+      <el-button size="small" @click="emit('export-html')">
+        <el-icon class="mr-0.5"><Download /></el-icon>导出 HTML
+      </el-button>
     </div>
   </div>
 </template>

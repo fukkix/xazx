@@ -11,14 +11,23 @@ const props = defineProps<{
 const store = useDocEditorStore()
 const isSelected = computed(() => store.selectedNodeId === props.node.id)
 const showAnnotator = ref(false)
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
 function onClick() {
   store.selectedNodeId = props.node.id
 }
 
-function updateAlt(e: Event) {
-  const target = e.target as HTMLInputElement
-  store.updateNode(props.node.id, { alt: target.value })
+function triggerUpload() {
+  fileInputRef.value?.click()
+}
+
+function onFileSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  const url = URL.createObjectURL(file)
+  store.updateNode(props.node.id, { file, url, content: file.name, alt: file.name })
+  input.value = ''
 }
 
 function getImageUrl() {
@@ -40,11 +49,29 @@ function onAnnotateDone(blob: Blob) {
     @click.stop="onClick"
   >
     <div class="flex items-center justify-between mb-2">
-      <span class="text-xs text-secondary">图片</span>
+      <span class="text-xs text-secondary font-medium">图片</span>
       <div class="flex gap-2">
-        <el-button v-if="node.url || node.file" size="small" text @click.stop="showAnnotator = true">标注</el-button>
+        <el-button size="small" text @click.stop="triggerUpload">
+          <el-icon class="mr-1"><Upload /></el-icon>上传
+        </el-button>
+        <el-button
+          v-if="node.url || node.file"
+          size="small"
+          text
+          @click.stop="showAnnotator = true"
+        >
+          <el-icon class="mr-1"><EditPen /></el-icon>标注
+        </el-button>
       </div>
     </div>
+
+    <input
+      ref="fileInputRef"
+      type="file"
+      accept="image/*"
+      class="hidden"
+      @change="onFileSelected"
+    />
 
     <div v-if="node.url || node.file" class="relative">
       <img
@@ -53,13 +80,16 @@ function onAnnotateDone(blob: Blob) {
         class="max-w-full max-h-64 object-contain rounded border border-outline-variant"
       />
     </div>
-    <div v-else class="text-secondary text-xs">无图片预览</div>
+    <div v-else class="flex flex-col items-center justify-center py-8 text-secondary bg-surface-container-low rounded-lg border border-dashed border-outline-variant cursor-pointer hover:border-primary/40 transition-colors" @click.stop="triggerUpload">
+      <el-icon :size="32" class="mb-2 opacity-50"><Picture /></el-icon>
+      <span class="text-sm">点击上传或拖拽图片到此处</span>
+    </div>
 
     <div class="mt-2">
       <el-input
         size="small"
         :model-value="node.alt || ''"
-        placeholder="ALT 描述"
+        placeholder="ALT 描述（可选）"
         @input="(v: string) => store.updateNodeSilent(props.node.id, { alt: v })"
         @change="(v: string) => store.updateNode(props.node.id, { alt: v })"
       />
