@@ -162,7 +162,7 @@ function onSave() {
       <el-button size="small" @click="clearAll">清空</el-button>
     </div>
 
-    <div class="relative overflow-auto border border-outline-variant rounded-lg bg-gray-100">
+    <div class="relative overflow-auto border border-outline bg-surface-container-high">
       <canvas
         ref="canvasRef"
         class="max-w-full cursor-crosshair block"
@@ -174,7 +174,7 @@ function onSave() {
 
       <div
         v-if="showTextInput"
-        class="absolute bg-white border border-primary shadow-lg rounded px-2 py-1 flex gap-2"
+        class="absolute bg-white border border-primary rounded px-2 py-1 flex gap-2"
         :style="{ left: `${textPos.x}px`, top: `${textPos.y}px` }"
       >
         <el-input v-model="textInput" size="small" placeholder="输入文字" @keyup.enter="applyText" />

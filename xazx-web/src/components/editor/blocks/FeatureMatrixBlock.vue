@@ -147,7 +147,7 @@ const totalColspan = computed(() => 3 + versions.value.length)
 
 <template>
   <div
-    class="py-2 px-3 rounded-lg border-2 transition-all"
+    class="py-2 px-3 border-2 transition-all"
     :class="isSelected ? 'border-primary bg-primary/5' : 'border-transparent hover:border-primary/20'"
     @click.stop="onClick"
   >
@@ -163,13 +163,13 @@ const totalColspan = computed(() => 3 + versions.value.length)
       <table class="w-full border-collapse text-sm">
         <thead>
           <tr class="bg-surface-container-low">
-            <th class="border border-outline-variant px-2 py-1.5 text-left font-medium min-w-[100px]">功能类别</th>
-            <th class="border border-outline-variant px-2 py-1.5 text-left font-medium min-w-[140px]">功能项</th>
-            <th class="border border-outline-variant px-2 py-1.5 text-left font-medium min-w-[200px]">功能说明</th>
+            <th class="border border-outline px-2 py-1.5 text-left font-medium min-w-[100px]">功能类别</th>
+            <th class="border border-outline px-2 py-1.5 text-left font-medium min-w-[140px]">功能项</th>
+            <th class="border border-outline px-2 py-1.5 text-left font-medium min-w-[200px]">功能说明</th>
             <th
               v-for="(ver, vIdx) in versions"
               :key="vIdx"
-              class="border border-outline-variant px-2 py-1.5 text-center font-medium min-w-[80px]"
+              class="border border-outline px-2 py-1.5 text-center font-medium min-w-[80px]"
             >
               <div class="flex items-center justify-center gap-1">
                 <input
@@ -199,7 +199,7 @@ const totalColspan = computed(() => 3 + versions.value.length)
             <template v-if="!collapsed[cat.name]">
               <tr>
                 <td
-                  class="border border-outline-variant px-2 py-1.5 align-top bg-surface-container-lowest font-medium"
+                  class="border border-outline px-2 py-1.5 align-top bg-surface-container-low font-medium"
                   :rowspan="cat.items.length"
                 >
                   <div class="flex items-start justify-between gap-2">
@@ -215,7 +215,7 @@ const totalColspan = computed(() => 3 + versions.value.length)
                     </div>
                   </div>
                 </td>
-                <td class="border border-outline-variant px-2 py-1.5 align-top">
+                <td class="border border-outline px-2 py-1.5 align-top">
                   <div class="flex items-center justify-between gap-1">
                     <input
                       :value="cat.items[0]!.name"
@@ -226,7 +226,7 @@ const totalColspan = computed(() => 3 + versions.value.length)
                     <el-icon class="cursor-pointer hover:text-danger text-secondary flex-shrink-0" @click.stop="removeItem(cIdx, 0)"><Close /></el-icon>
                   </div>
                 </td>
-                <td class="border border-outline-variant px-2 py-1.5 align-top">
+                <td class="border border-outline px-2 py-1.5 align-top">
                   <input
                     :value="cat.items[0]!.description"
                     class="w-full bg-transparent outline-none border-b border-transparent focus:border-primary"
@@ -237,7 +237,7 @@ const totalColspan = computed(() => 3 + versions.value.length)
                 <td
                   v-for="(ver, vIdx) in versions"
                   :key="vIdx"
-                  class="border border-outline-variant px-2 py-1.5 text-center align-top cursor-pointer hover:bg-primary/5"
+                  class="border border-outline px-2 py-1.5 text-center align-top cursor-pointer hover:bg-primary/5"
                   @dblclick.stop="cycleSupport(cIdx, 0, ver)"
                 >
                   <input
@@ -249,7 +249,7 @@ const totalColspan = computed(() => 3 + versions.value.length)
                 </td>
               </tr>
               <tr v-for="(item, iIdx) in cat.items.slice(1)" :key="`${cIdx}-${iIdx + 1}`">
-                <td class="border border-outline-variant px-2 py-1.5 align-top">
+                <td class="border border-outline px-2 py-1.5 align-top">
                   <div class="flex items-center justify-between gap-1">
                     <input
                       :value="item.name"
@@ -260,7 +260,7 @@ const totalColspan = computed(() => 3 + versions.value.length)
                     <el-icon class="cursor-pointer hover:text-danger text-secondary flex-shrink-0" @click.stop="removeItem(cIdx, iIdx + 1)"><Close /></el-icon>
                   </div>
                 </td>
-                <td class="border border-outline-variant px-2 py-1.5 align-top">
+                <td class="border border-outline px-2 py-1.5 align-top">
                   <input
                     :value="item.description"
                     class="w-full bg-transparent outline-none border-b border-transparent focus:border-primary"
@@ -271,7 +271,7 @@ const totalColspan = computed(() => 3 + versions.value.length)
                 <td
                   v-for="(ver, vIdx) in versions"
                   :key="vIdx"
-                  class="border border-outline-variant px-2 py-1.5 text-center align-top cursor-pointer hover:bg-primary/5"
+                  class="border border-outline px-2 py-1.5 text-center align-top cursor-pointer hover:bg-primary/5"
                   @dblclick.stop="cycleSupport(cIdx, iIdx + 1, ver)"
                 >
                   <input
@@ -289,7 +289,7 @@ const totalColspan = computed(() => 3 + versions.value.length)
               </tr>
             </template>
             <tr v-else>
-              <td :colspan="totalColspan" class="border border-outline-variant px-2 py-1.5 bg-surface-container-lowest cursor-pointer" @click.stop="toggleCollapse(cat.name)">
+              <td :colspan="totalColspan" class="border border-outline px-2 py-1.5 bg-surface-container-low cursor-pointer" @click.stop="toggleCollapse(cat.name)">
                 <div class="flex items-center gap-2 text-secondary">
                   <el-icon><ArrowRight /></el-icon>
                   <span class="font-medium">{{ cat.name }}</span>

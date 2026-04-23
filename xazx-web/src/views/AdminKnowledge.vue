@@ -251,7 +251,7 @@ const handleIngest = async () => {
       pollTask(item.task_id, { filename: item.file.name, domain: selectedDomain.value })
     }
 
-    ElMessage.success(`已提交 ${submitted.length} 个文件，正在构建 LLM Wiki`) 
+    ElMessage.success(`已提交 ${submitted.length} 个文件，正在构建 LLM Wiki`)
     resetFileInput()
     await Promise.all([loadStats(), loadLogs()])
   } catch (error: any) {
@@ -309,22 +309,23 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="p-6 space-y-6">
+  <div class="space-y-4">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-on-surface">知识库管理</h1>
+        <div class="flex items-baseline gap-3 mb-1">
+          <h1 class="text-2xl font-bold text-on-surface">知识库管理</h1>
+          <span class="geek-label">LLM_WIKI_SYSTEM</span>
+        </div>
         <p class="text-sm text-secondary mt-1">上传文档并触发 LLM Wiki 构建</p>
       </div>
       <el-button type="primary" :icon="Refresh" @click="loadStats(); loadLogs()">刷新</el-button>
     </div>
 
-    <el-card shadow="hover">
-      <template #header>
-        <div class="flex items-center gap-2">
-          <el-icon><UploadFilled /></el-icon>
-          <span class="font-semibold">文档入库</span>
-        </div>
-      </template>
+    <div class="geek-panel p-5">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-outline">
+        <el-icon><UploadFilled /></el-icon>
+        <span class="font-semibold text-sm">文档入库</span>
+      </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <el-select v-model="selectedDomain" placeholder="选择知识域">
@@ -340,13 +341,13 @@ onBeforeUnmount(() => {
           type="file"
           multiple
           accept=".pdf,.docx,.pptx,.png,.jpg,.jpeg"
-          class="block w-full text-sm text-on-surface file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-on-primary"
+          class="block w-full text-sm text-on-surface file:mr-3 file:py-2 file:px-4 file:border-0 file:bg-primary file:text-on-primary"
           @change="handleFileChange"
         >
       </div>
 
       <div class="mt-4 flex items-center justify-between gap-4">
-        <div class="text-sm text-secondary">
+        <div class="text-sm text-secondary font-mono">
           {{ selectedFiles.length > 0 ? `已选择 ${selectedFiles.length} 个文件` : '未选择文件' }}
         </div>
         <el-button type="primary" :loading="uploading" :disabled="selectedFiles.length === 0" @click="handleIngest">
@@ -357,135 +358,128 @@ onBeforeUnmount(() => {
       <div v-if="uploading && uploadProgress > 0" class="mt-3">
         <el-progress :percentage="uploadProgress" :stroke-width="8" />
       </div>
-    </el-card>
+    </div>
 
-    <el-card shadow="hover">
-      <template #header>
-        <div class="flex items-center gap-2">
-          <el-icon><Loading /></el-icon>
-          <span class="font-semibold">入库任务</span>
-        </div>
-      </template>
+    <div class="geek-panel p-5">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-outline">
+        <el-icon><Loading /></el-icon>
+        <span class="font-semibold text-sm">入库任务</span>
+        <span class="geek-label ml-auto">{{ tasks.length }} TASKS</span>
+      </div>
 
       <div v-if="tasks.length === 0" class="text-secondary text-sm">暂无任务</div>
       <div v-else class="space-y-3">
-        <div v-for="row in tasks" :key="row.task_id" class="rounded-lg border border-surface-container-high p-4">
+        <div v-for="row in tasks" :key="row.task_id" class="border border-outline p-4">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <p class="font-medium text-on-surface">{{ row.filename }}</p>
-              <p class="text-xs text-secondary">{{ row.domain }} | {{ row.startedAt }}</p>
+              <p class="font-medium text-on-surface text-sm">{{ row.filename }}</p>
+              <p class="text-xs text-secondary font-mono">{{ row.domain }} | {{ row.startedAt }}</p>
             </div>
-            <el-tag :type="statusTagType(row.status)">{{ row.status }}</el-tag>
+            <el-tag :type="statusTagType(row.status)">{{ row.status.toUpperCase() }}</el-tag>
           </div>
 
           <div class="mt-3">
-            <div class="flex items-center justify-between mb-1 text-xs text-secondary">
+            <div class="flex items-center justify-between mb-1 text-xs text-secondary font-mono">
               <span>{{ formatTaskProgress(row.progress) }}</span>
               <span>{{ taskPercent(row.progress) }}%</span>
             </div>
-            <el-progress :percentage="taskPercent(row.progress)" :status="row.status === 'error' ? 'exception' : row.status === 'success' ? 'success' : ''" :stroke-width="8" />
+            <el-progress :percentage="taskPercent(row.progress)" :status="row.status === 'error' ? 'exception' : row.status === 'success' ? 'success' : ''" :stroke-width="6" />
           </div>
 
-          <p v-if="row.wiki_page_title" class="text-sm text-green-700 mt-2">
+          <p v-if="row.wiki_page_title" class="text-sm text-primary mt-2 font-mono">
             {{ row.wiki_page_title }}
           </p>
-          <p v-if="row.wiki_page_path" class="text-xs text-secondary">{{ row.wiki_page_path }}</p>
-          <p v-if="row.error" class="text-sm text-red-700 mt-2">{{ row.error }}</p>
+          <p v-if="row.wiki_page_path" class="text-xs text-secondary font-mono">{{ row.wiki_page_path }}</p>
+          <p v-if="row.error" class="text-sm text-error mt-2">{{ row.error }}</p>
         </div>
       </div>
-    </el-card>
+    </div>
 
-    <el-card shadow="hover">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <el-icon><Document /></el-icon>
-            <span class="font-semibold">统计信息</span>
-          </div>
-          <el-button text :icon="Refresh" :loading="isLoadingStats" @click="loadStats">刷新</el-button>
+    <div class="geek-panel p-5">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-outline">
+        <div class="flex items-center gap-2">
+          <el-icon><Document /></el-icon>
+          <span class="font-semibold text-sm">统计信息</span>
         </div>
-      </template>
+        <el-button text :icon="Refresh" :loading="isLoadingStats" @click="loadStats">刷新</el-button>
+      </div>
 
-      <div class="bg-primary/10 rounded-lg p-4 text-center mb-4">
-        <p class="text-xs text-secondary">总页面数</p>
-        <p class="text-3xl font-bold text-primary">{{ totalPages }}</p>
-        <p v-if="stats?.last_updated" class="text-xs text-secondary mt-1">{{ stats.last_updated }}</p>
+      <div class="border border-outline p-4 text-center mb-4 bg-surface-container-high">
+        <p class="geek-label">总页面数</p>
+        <p class="text-3xl font-bold text-primary font-mono">{{ totalPages }}</p>
+        <p v-if="stats?.last_updated" class="text-xs text-secondary mt-1 font-mono">{{ stats.last_updated }}</p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div v-for="row in domainStatsRows" :key="row.domain" class="rounded-lg bg-surface-container-low p-3">
+        <div v-for="row in domainStatsRows" :key="row.domain" class="border border-outline p-3 bg-surface-container-low">
           <div class="flex items-center justify-between">
-            <span class="font-medium text-on-surface">{{ row.domain }}</span>
-            <span class="text-primary font-semibold">{{ row.total }}</span>
+            <span class="font-medium text-on-surface text-sm">{{ row.domain }}</span>
+            <span class="text-primary font-semibold font-mono">{{ row.total }}</span>
           </div>
         </div>
       </div>
-    </el-card>
+    </div>
 
-    <el-card shadow="hover">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <el-icon><Warning /></el-icon>
-            <span class="font-semibold">Lint 健康检查</span>
-          </div>
-          <el-button type="warning" :loading="isLinting" @click="runLint">运行 Lint</el-button>
+    <div class="geek-panel p-5">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-outline">
+        <div class="flex items-center gap-2">
+          <el-icon><Warning /></el-icon>
+          <span class="font-semibold text-sm">Lint 健康检查</span>
         </div>
-      </template>
+        <el-button type="warning" :loading="isLinting" @click="runLint">运行 Lint</el-button>
+      </div>
 
       <div v-if="lintResult" class="grid grid-cols-3 gap-3 text-center">
-        <div class="rounded-lg p-3 bg-surface-container-low">
-          <p class="text-xs text-secondary">孤立页面</p>
-          <p class="text-xl font-bold">{{ lintResult.summary.orphan_pages }}</p>
+        <div class="border border-outline p-3 bg-surface-container-low">
+          <p class="geek-label">孤立页面</p>
+          <p class="text-xl font-bold font-mono">{{ lintResult.summary.orphan_pages }}</p>
         </div>
-        <div class="rounded-lg p-3 bg-surface-container-low">
-          <p class="text-xs text-secondary">断链</p>
-          <p class="text-xl font-bold">{{ lintResult.summary.broken_links }}</p>
+        <div class="border border-outline p-3 bg-surface-container-low">
+          <p class="geek-label">断链</p>
+          <p class="text-xl font-bold font-mono">{{ lintResult.summary.broken_links }}</p>
         </div>
-        <div class="rounded-lg p-3 bg-surface-container-low">
-          <p class="text-xs text-secondary">过期页面</p>
-          <p class="text-xl font-bold">{{ lintResult.summary.stale_pages }}</p>
+        <div class="border border-outline p-3 bg-surface-container-low">
+          <p class="geek-label">过期页面</p>
+          <p class="text-xl font-bold font-mono">{{ lintResult.summary.stale_pages }}</p>
         </div>
       </div>
       <div v-else class="text-sm text-secondary">尚未执行 Lint</div>
-    </el-card>
+    </div>
 
-    <el-card shadow="hover">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <el-icon><CircleCheck /></el-icon>
-            <span class="font-semibold">操作日志</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <el-select v-model="selectedLogType" placeholder="类型" size="small" style="width: 110px" @change="loadLogs">
-              <el-option v-for="option in logTypeOptions" :key="option.value" :label="option.label" :value="option.value" />
-            </el-select>
-            <el-select v-model="logLimit" placeholder="数量" size="small" style="width: 90px" @change="loadLogs">
-              <el-option label="10" :value="10" />
-              <el-option label="20" :value="20" />
-              <el-option label="50" :value="50" />
-            </el-select>
-            <el-button text :icon="Refresh" :loading="isLoadingLogs" @click="loadLogs">刷新</el-button>
-          </div>
+    <div class="geek-panel p-5">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-outline">
+        <div class="flex items-center gap-2">
+          <el-icon><CircleCheck /></el-icon>
+          <span class="font-semibold text-sm">操作日志</span>
         </div>
-      </template>
+        <div class="flex items-center gap-2">
+          <el-select v-model="selectedLogType" placeholder="类型" size="small" style="width: 110px" @change="loadLogs">
+            <el-option v-for="option in logTypeOptions" :key="option.value" :label="option.label" :value="option.value" />
+          </el-select>
+          <el-select v-model="logLimit" placeholder="数量" size="small" style="width: 90px" @change="loadLogs">
+            <el-option label="10" :value="10" />
+            <el-option label="20" :value="20" />
+            <el-option label="50" :value="50" />
+          </el-select>
+          <el-button text :icon="Refresh" :loading="isLoadingLogs" @click="loadLogs">刷新</el-button>
+        </div>
+      </div>
 
       <div v-if="logs?.entries?.length" class="space-y-2">
-        <div v-for="(entry, idx) in logs.entries" :key="idx" class="rounded-lg bg-surface-container-low p-3">
+        <div v-for="(entry, idx) in logs.entries" :key="idx" class="border border-outline p-3 bg-surface-container-low">
           <div class="flex items-center justify-between gap-3">
             <div>
               <p class="text-sm font-medium text-on-surface">{{ entry.description }}</p>
-              <p v-if="entry.detail" class="text-xs text-secondary">{{ entry.detail }}</p>
+              <p v-if="entry.detail" class="text-xs text-secondary font-mono">{{ entry.detail }}</p>
             </div>
             <div class="text-right">
-              <el-tag size="small">{{ entry.type }}</el-tag>
-              <p class="text-xs text-secondary mt-1">{{ entry.date }}</p>
+              <el-tag size="small">{{ entry.type.toUpperCase() }}</el-tag>
+              <p class="text-xs text-secondary mt-1 font-mono">{{ entry.date }}</p>
             </div>
           </div>
         </div>
       </div>
       <div v-else class="text-sm text-secondary">暂无日志</div>
-    </el-card>
+    </div>
   </div>
 </template>

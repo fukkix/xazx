@@ -39,7 +39,7 @@ function updateStep(index: number, content: string) {
 
 <template>
   <div
-    class="py-2 px-3 rounded-lg border-2 transition-all"
+    class="py-2 px-3 border-2 transition-all"
     :class="isSelected ? 'border-primary bg-primary/5' : 'border-transparent hover:border-primary/20'"
     @click.stop="onClick"
   >

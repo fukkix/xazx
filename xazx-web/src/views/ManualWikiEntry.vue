@@ -648,11 +648,14 @@ async function onDrop(e: DragEvent) {
 </script>
 
 <template>
-  <div class="p-6 max-w-7xl mx-auto space-y-6">
+  <div class="max-w-7xl mx-auto space-y-4">
     <!-- 头部 -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-on-surface">手动编辑 Wiki 页面</h1>
+        <div class="flex items-baseline gap-3 mb-1">
+          <h1 class="text-2xl font-bold text-on-surface">手动编辑 Wiki 页面</h1>
+          <span class="geek-label">STRUCTURED_EDITOR</span>
+        </div>
         <p class="text-sm text-secondary mt-1">结构化编辑器：支持层级、表格、步骤、截图标注与 Word 导入</p>
       </div>
       <div class="flex items-center gap-3">
@@ -663,8 +666,11 @@ async function onDrop(e: DragEvent) {
     </div>
 
     <!-- 来源信息 + 标题 -->
-    <el-card shadow="hover">
-      <template #header><span class="font-semibold">页面信息</span></template>
+    <div class="geek-panel p-5">
+      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-outline">
+        <span class="font-semibold text-sm">页面信息</span>
+        <span class="geek-label ml-auto">META_DATA</span>
+      </div>
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
           <label class="block text-xs text-secondary mb-1">页面标题 <span class="text-red-500">*</span></label>
@@ -711,17 +717,17 @@ async function onDrop(e: DragEvent) {
           </el-select>
         </div>
       </div>
-    </el-card>
+    </div>
 
     <!-- 编辑器主体 -->
-    <el-card shadow="hover" class="min-h-[600px]">
-      <template #header>
+    <div class="geek-panel p-5 min-h-[600px]">
+      <div class="mb-4 pb-3 border-b border-outline">
         <EditorToolbar
           @import-word="showWordImporter = true"
           @export-md="exportMd"
           @export-html="exportHtml"
         />
-      </template>
+      </div>
 
       <div class="flex gap-4 h-[700px]">
         <!-- 左侧大纲 -->
@@ -732,7 +738,7 @@ async function onDrop(e: DragEvent) {
         <!-- 中间画布 -->
         <div
           class="flex-1 overflow-auto pr-2 relative transition-all"
-          :class="isDragOver ? 'bg-primary/5 ring-2 ring-primary/30 ring-inset rounded-lg' : ''"
+          :class="isDragOver ? 'bg-primary/5 ring-2 ring-primary/30 ring-inset' : ''"
           @click="onCanvasClick"
           @paste="onPaste"
           @dragenter="onDragEnter"
@@ -743,9 +749,9 @@ async function onDrop(e: DragEvent) {
           <!-- 拖拽上传遮罩 -->
           <div
             v-if="isDragOver"
-            class="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none bg-primary/5 rounded-lg"
+            class="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none bg-primary/5"
           >
-            <div class="w-16 h-16 rounded-2xl bg-white shadow-lg flex items-center justify-center mb-3">
+            <div class="w-16 h-16 bg-white flex items-center justify-center mb-3">
               <el-icon :size="32" class="text-primary"><Upload /></el-icon>
             </div>
             <p class="text-base font-medium text-primary">释放以添加图片</p>
@@ -763,7 +769,7 @@ async function onDrop(e: DragEvent) {
 
           <!-- 空画布引导 -->
           <div v-else class="flex flex-col items-center justify-center h-full text-center space-y-6">
-            <div class="w-20 h-20 rounded-2xl bg-surface-container-low flex items-center justify-center">
+            <div class="w-20 h-20 bg-surface-container-low flex items-center justify-center">
               <el-icon :size="40" class="text-secondary/40"><Document /></el-icon>
             </div>
             <div>
@@ -829,7 +835,7 @@ async function onDrop(e: DragEvent) {
                       v-for="link in selectedLinks"
                       :key="link"
                       class="flex items-center justify-between text-xs px-2 py-1 rounded"
-                      :class="brokenLinks.includes(link) ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'"
+                      :class="brokenLinks.includes(link) ? 'bg-error-container/30 text-error' : 'bg-surface-container-high text-primary'"
                     >
                       <span>[[{{ link }}]]</span>
                       <el-icon class="cursor-pointer" @click="removeLink(link)"><Close /></el-icon>
@@ -851,7 +857,7 @@ async function onDrop(e: DragEvent) {
                 <div
                   v-for="frag in fragments"
                   :key="frag.id"
-                  class="rounded-lg bg-surface-container-low p-2 text-sm cursor-pointer hover:bg-primary/5"
+                  class="bg-surface-container-low p-2 text-sm cursor-pointer hover:bg-primary/5 border border-outline"
                   @click="insertFragment(frag.nodes)"
                 >
                   <div class="font-medium">{{ frag.name }}</div>
@@ -864,7 +870,7 @@ async function onDrop(e: DragEvent) {
             <el-tab-pane label="预览" name="preview">
               <div class="space-y-2">
                 <el-button size="small" @click="updatePreview">刷新预览</el-button>
-                <div class="bg-surface-container-lowest rounded-lg p-3 text-xs font-mono whitespace-pre-wrap max-h-96 overflow-auto border border-outline-variant">
+                <div class="bg-surface-container-low p-3 text-xs font-mono whitespace-pre-wrap max-h-96 overflow-auto border border-outline-variant">
                   {{ previewMd || '点击刷新预览' }}
                 </div>
               </div>
@@ -872,7 +878,7 @@ async function onDrop(e: DragEvent) {
           </el-tabs>
         </div>
       </div>
-    </el-card>
+    </div>
 
     <!-- 底部提交栏 -->
     <div class="flex items-center justify-end gap-4 pb-8">

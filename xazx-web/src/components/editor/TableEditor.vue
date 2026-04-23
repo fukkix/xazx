@@ -213,14 +213,14 @@ function selectColumn(colIndex: number) {
       <el-button size="small" text @click="clearSelection">清除选择</el-button>
     </div>
 
-    <div class="overflow-auto border border-outline-variant rounded-lg p-3 bg-surface-container-lowest">
+    <div class="overflow-auto border border-outline p-3 bg-surface-container-low">
       <table class="border-collapse">
         <thead>
           <tr>
             <th
               v-for="cIdx in colCount"
               :key="`col-${cIdx-1}`"
-              class="border border-outline-variant bg-surface-container-low px-2 py-1 text-xs text-secondary cursor-pointer select-none"
+              class="border border-outline bg-surface-container-low px-2 py-1 text-xs text-secondary cursor-pointer select-none"
               :class="activeCol === cIdx - 1 ? 'bg-primary/20' : ''"
               @click="selectColumn(cIdx - 1)"
             >
@@ -246,7 +246,7 @@ function selectColumn(colIndex: number) {
             <td
               v-for="(cell, cIdx) in row"
               :key="cIdx"
-              class="border border-outline-variant min-w-[100px] min-h-[40px] align-top"
+              class="border border-outline min-w-[100px] min-h-[40px] align-top"
               :class="isSelected(rIdx, cIdx) ? 'bg-primary/10' : ''"
               :rowspan="cell.rowspan || 1"
               :colspan="cell.colspan || 1"

@@ -13,10 +13,10 @@ const contentRef = ref<HTMLElement | null>(null)
 const isComposing = ref(false)
 
 const calloutTypes = [
-  { key: 'info', label: '信息', icon: 'InfoFilled', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
+  { key: 'info', label: '信息', icon: 'InfoFilled', color: 'text-primary', bg: 'bg-surface-container-high', border: 'border-blue-200' },
   { key: 'warning', label: '警告', icon: 'WarningFilled', color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' },
-  { key: 'success', label: '成功', icon: 'CircleCheckFilled', color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
-  { key: 'danger', label: '危险', icon: 'CircleCloseFilled', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
+  { key: 'success', label: '成功', icon: 'CircleCheckFilled', color: 'text-success', bg: 'bg-success-container/30', border: 'border-green-200' },
+  { key: 'danger', label: '危险', icon: 'CircleCloseFilled', color: 'text-error', bg: 'bg-error-container/30', border: 'border-red-200' },
   { key: 'tip', label: '提示', icon: 'StarFilled', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
 ] as const
 
@@ -80,7 +80,7 @@ function setType(type: CalloutType) {
 
 <template>
   <div
-    class="py-2 px-3 rounded-lg border-2 transition-all"
+    class="py-2 px-3 border-2 transition-all"
     :class="isSelected ? 'border-primary bg-primary/5' : 'border-transparent hover:border-primary/20'"
     @click.stop="onClick"
   >
@@ -99,7 +99,7 @@ function setType(type: CalloutType) {
         </el-tag>
       </div>
     </div>
-    <div class="flex items-start gap-2 rounded-lg px-3 py-2 border"
+    <div class="flex items-start gap-2 px-3 py-2 border"
       :class="[style.bg, style.border]"
     >
       <el-icon :class="style.color" class="mt-0.5 flex-shrink-0">

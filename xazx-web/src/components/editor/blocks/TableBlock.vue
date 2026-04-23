@@ -66,7 +66,7 @@ function isGroupHeader(rIdx: number) {
 
 <template>
   <div
-    class="py-2 px-3 rounded-lg border-2 cursor-pointer transition-all"
+    class="py-2 px-3 border-2 cursor-pointer transition-all"
     :class="isSelected ? 'border-primary bg-primary/5' : 'border-transparent hover:border-primary/20'"
     @click.stop="onClick"
   >
@@ -89,9 +89,9 @@ function isGroupHeader(rIdx: number) {
             <td
               v-for="(cell, cIdx) in row"
               :key="cIdx"
-              class="border border-outline-variant px-3 py-2 min-w-[80px]"
+              class="border border-outline px-3 py-2 min-w-[80px]"
               :class="[
-                rIdx === 0 ? 'bg-surface-container-low font-medium' : 'bg-surface-container-lowest',
+                rIdx === 0 ? 'bg-surface-container-low font-medium' : 'bg-surface-container-low',
                 cIdx < freezeCols ? 'sticky z-10' : '',
                 cIdx === 0 && freezeCols >= 1 ? 'left-0' : '',
                 cIdx === 1 && freezeCols >= 2 ? 'left-[80px]' : '',

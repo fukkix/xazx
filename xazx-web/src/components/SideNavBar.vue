@@ -19,62 +19,70 @@ const handleUploadClick = () => {
 }
 
 const handleUploadSubmit = () => {
-  // TODO: 对接后端上传 API
   console.log('Upload:', uploadCategory.value, uploadFileList.value)
   uploadDialogVisible.value = false
 }
 </script>
 
 <template>
-  <aside class="h-screen w-64 fixed left-0 top-0 bg-blue-900 dark:bg-slate-950 shadow-2xl hidden md:flex flex-col pt-20 pb-8 px-4 z-40">
-    <div class="mb-8 px-4">
-      <h2 class="text-white font-bold text-xl">资料库</h2>
-      <p class="text-blue-200/70 text-xs font-medium font-manrope uppercase tracking-widest">企业级核心资产</p>
+  <aside class="h-screen w-60 flex-shrink-0 bg-surface border-r border-outline hidden md:flex flex-col z-40">
+    <div class="h-14 flex items-center px-4 border-b border-outline">
+      <div>
+        <h2 class="text-on-surface font-bold text-sm tracking-tight">资料库</h2>
+        <p class="text-on-surface-variant text-[10px] font-mono uppercase tracking-widest">ENTERPRISE_ASSETS</p>
+      </div>
     </div>
-    
-    <nav class="flex-1 space-y-1">
-      <router-link to="/materials/document" active-class="bg-blue-800 dark:bg-blue-900 !text-white translate-x-1" class="text-blue-200/70 hover:text-white rounded-lg px-4 py-3 flex items-center gap-3 font-manrope text-sm font-medium hover:bg-blue-800/50 transition-all">
-        <el-icon :size="18"><Document /></el-icon>
+
+    <nav class="flex-1 py-2">
+      <div class="px-3 py-2">
+        <span class="geek-label px-1">核心资源</span>
+      </div>
+      <router-link to="/materials/document" active-class="!text-on-surface border-l-2 border-primary bg-primary/5" class="mx-2 px-3 py-2 flex items-center gap-2 text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all border-l-2 border-transparent">
+        <el-icon :size="16"><Document /></el-icon>
         文档 (Documents)
       </router-link>
-      <router-link to="/materials/image" active-class="bg-blue-800 dark:bg-blue-900 !text-white translate-x-1" class="text-blue-200/70 hover:text-white rounded-lg px-4 py-3 flex items-center gap-3 font-manrope text-sm font-medium hover:bg-blue-800/50 transition-all">
-        <el-icon :size="18"><Picture /></el-icon>
+      <router-link to="/materials/image" active-class="!text-on-surface border-l-2 border-primary bg-primary/5" class="mx-2 px-3 py-2 flex items-center gap-2 text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all border-l-2 border-transparent">
+        <el-icon :size="16"><Picture /></el-icon>
         图片素材 (Images)
       </router-link>
-      <router-link to="/materials/ppt" active-class="bg-blue-800 dark:bg-blue-900 !text-white translate-x-1" class="text-blue-200/70 hover:text-white rounded-lg px-4 py-3 flex items-center gap-3 font-manrope text-sm font-medium hover:bg-blue-800/50 transition-all">
-        <el-icon :size="18"><DataBoard /></el-icon>
+      <router-link to="/materials/ppt" active-class="!text-on-surface border-l-2 border-primary bg-primary/5" class="mx-2 px-3 py-2 flex items-center gap-2 text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all border-l-2 border-transparent">
+        <el-icon :size="16"><DataBoard /></el-icon>
         演示文稿 (PPTs)
       </router-link>
-      <router-link to="/knowledge" active-class="bg-blue-800 dark:bg-blue-900 !text-white translate-x-1" class="text-blue-200/70 hover:text-white rounded-lg px-4 py-3 flex items-center gap-3 font-manrope text-sm font-medium hover:bg-blue-800/50 transition-all border-t border-blue-800 mt-4 pt-4">
-        <el-icon :size="18"><Opportunity /></el-icon>
+
+      <div class="px-3 py-2 mt-2">
+        <span class="geek-label px-1">系统模块</span>
+      </div>
+      <router-link to="/knowledge" active-class="!text-on-surface border-l-2 border-primary bg-primary/5" class="mx-2 px-3 py-2 flex items-center gap-2 text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all border-l-2 border-transparent">
+        <el-icon :size="16"><Opportunity /></el-icon>
         知识库 (Wiki)
       </router-link>
-      <router-link v-if="auth.user?.role === 'super_admin' || auth.user?.role === 'admin'" to="/accounts" active-class="bg-blue-800 dark:bg-blue-900 !text-white translate-x-1" class="text-blue-200/70 hover:text-white rounded-lg px-4 py-3 flex items-center gap-3 font-manrope text-sm font-medium hover:bg-blue-800/50 transition-all">
-        <el-icon :size="18"><User /></el-icon>
+      <router-link v-if="auth.user?.role === 'super_admin' || auth.user?.role === 'admin'" to="/accounts" active-class="!text-on-surface border-l-2 border-primary bg-primary/5" class="mx-2 px-3 py-2 flex items-center gap-2 text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all border-l-2 border-transparent">
+        <el-icon :size="16"><User /></el-icon>
         账号及权限管理
       </router-link>
     </nav>
-    
-    <div class="mt-auto space-y-4">
+
+    <div class="p-3 space-y-2 border-t border-outline">
       <button
         v-if="auth.user?.role === 'super_admin' || auth.user?.role === 'admin'"
-        class="w-full py-3 bg-primary text-on-primary rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-primary-dim active:scale-[0.97] transition-all"
+        class="w-full py-2 bg-on-surface text-on-primary text-xs font-bold flex items-center justify-center gap-2 hover:bg-on-surface-variant active:opacity-90 transition-all"
         @click="handleUploadClick"
       >
-        <el-icon :size="20"><Plus /></el-icon>
+        <el-icon :size="16"><Plus /></el-icon>
         上传新资源
       </button>
-      
-      <div class="pt-6 border-t border-blue-800/50">
-        <router-link to="/portal" target="_blank" class="text-blue-200/70 hover:text-white px-4 py-2 flex items-center gap-3 font-manrope text-sm font-medium">
-          <el-icon :size="18"><Monitor /></el-icon> 前台门户
+
+      <div class="pt-2 space-y-0">
+        <router-link to="/portal" target="_blank" class="text-on-surface-variant hover:text-on-surface px-2 py-1.5 flex items-center gap-2 text-xs font-medium transition-colors">
+          <el-icon :size="14"><Monitor /></el-icon> 前台门户
           <el-icon :size="10" class="ml-auto opacity-40"><TopRight /></el-icon>
         </router-link>
-        <a href="#" class="text-blue-200/70 hover:text-white px-4 py-2 flex items-center gap-3 font-manrope text-sm font-medium">
-          <el-icon :size="18"><Help /></el-icon> 使用帮助
+        <a href="#" class="text-on-surface-variant hover:text-on-surface px-2 py-1.5 flex items-center gap-2 text-xs font-medium transition-colors">
+          <el-icon :size="14"><Help /></el-icon> 使用帮助
         </a>
-        <a href="http://localhost:5173" target="_blank" rel="noopener noreferrer" class="text-blue-200/70 hover:text-white px-4 py-2 flex items-center gap-3 font-manrope text-sm font-medium">
-          <el-icon :size="18"><DataLine /></el-icon> 甘特图工具
+        <a href="http://localhost:5173" target="_blank" rel="noopener noreferrer" class="text-on-surface-variant hover:text-on-surface px-2 py-1.5 flex items-center gap-2 text-xs font-medium transition-colors">
+          <el-icon :size="14"><DataLine /></el-icon> 甘特图工具
           <el-icon :size="10" class="ml-auto opacity-40"><TopRight /></el-icon>
         </a>
       </div>

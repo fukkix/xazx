@@ -1,4 +1,5 @@
 import './assets/main.css'
+import './assets/geek-theme.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'

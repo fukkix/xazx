@@ -24,7 +24,7 @@ function select(title: string) {
 </script>
 
 <template>
-  <div class="bg-white border border-outline-variant rounded-lg shadow-lg p-3 w-64">
+  <div class="bg-white border border-outline p-3 w-64">
     <el-input v-model="query" size="small" placeholder="搜索页面标题..." />
     <div class="mt-2 max-h-40 overflow-auto space-y-1">
       <div

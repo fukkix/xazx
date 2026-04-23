@@ -44,7 +44,7 @@ function onAnnotateDone(blob: Blob) {
 
 <template>
   <div
-    class="py-2 px-3 rounded-lg border-2 transition-all"
+    class="py-2 px-3 border-2 transition-all"
     :class="isSelected ? 'border-primary bg-primary/5' : 'border-transparent hover:border-primary/20'"
     @click.stop="onClick"
   >
@@ -77,10 +77,10 @@ function onAnnotateDone(blob: Blob) {
       <img
         :src="getImageUrl()"
         :alt="node.alt || ''"
-        class="max-w-full max-h-64 object-contain rounded border border-outline-variant"
+        class="max-w-full max-h-64 object-contain rounded border border-outline"
       />
     </div>
-    <div v-else class="flex flex-col items-center justify-center py-8 text-secondary bg-surface-container-low rounded-lg border border-dashed border-outline-variant cursor-pointer hover:border-primary/40 transition-colors" @click.stop="triggerUpload">
+    <div v-else class="flex flex-col items-center justify-center py-8 text-secondary bg-surface-container-low border border-dashed border-outline cursor-pointer hover:border-primary/40 transition-colors" @click.stop="triggerUpload">
       <el-icon :size="32" class="mb-2 opacity-50"><Picture /></el-icon>
       <span class="text-sm">点击上传或拖拽图片到此处</span>
     </div>

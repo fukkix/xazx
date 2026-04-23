@@ -12,15 +12,9 @@ const handleLogout = () => {
 }
 
 const roleLabels: Record<string, string> = {
-  super_admin: '超级管理员',
-  admin: '管理员',
-  user: '普通用户'
-}
-
-const roleColors: Record<string, string> = {
-  super_admin: 'bg-red-50 text-red-600',
-  admin: 'bg-amber-50 text-amber-600',
-  user: 'bg-blue-50 text-blue-600'
+  super_admin: 'SUPER_ADMIN',
+  admin: 'ADMIN',
+  user: 'USER'
 }
 
 const adminLinks = [
@@ -36,21 +30,21 @@ const isActive = (link: any) => {
 </script>
 
 <template>
-  <nav class="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl shadow-sm dark:shadow-none h-16 flex justify-between items-center px-8 border-b border-surface-container-high/50">
-    <div class="flex items-center gap-8">
-      <div class="flex items-center gap-3">
-        <img src="@/assets/xazxpflogo.svg" class="h-8 object-contain" alt="Logo" />
-        <span class="text-2xl font-black text-blue-900 dark:text-blue-100">资源管理中心</span>
+  <nav class="h-14 flex justify-between items-center px-6 bg-surface border-b border-outline z-50">
+    <div class="flex items-center gap-6">
+      <div class="flex items-center gap-2">
+        <img src="@/assets/xazxpflogo.svg" class="h-7 object-contain" alt="Logo" />
+        <span class="text-lg font-bold text-on-surface tracking-tight">资源管理中心</span>
       </div>
-      <div class="hidden md:flex gap-1">
+      <div class="hidden md:flex gap-0 h-14">
         <router-link
           v-for="link in adminLinks"
           :key="link.to"
           :to="link.to"
-          class="px-4 py-2 rounded-lg font-manrope tracking-tight text-sm font-semibold transition-all"
+          class="px-4 h-full flex items-center text-xs font-semibold tracking-wide uppercase transition-all border-b-2 border-transparent"
           :class="isActive(link)
-            ? 'text-primary bg-primary/8'
-            : 'text-slate-500 dark:text-slate-400 hover:text-blue-800 hover:bg-surface-container-low'"
+            ? 'text-primary border-primary bg-primary/5'
+            : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'"
           :target="link.external ? '_blank' : undefined"
         >
           {{ link.label }}
@@ -58,30 +52,33 @@ const isActive = (link: any) => {
         </router-link>
       </div>
     </div>
-    
-    <div class="flex items-center gap-4">
+
+    <div class="flex items-center gap-3">
       <span
         v-if="auth.user?.role"
-        :class="`px-3 py-1 rounded-full text-xs font-bold ${roleColors[auth.user.role] || 'bg-blue-50 text-blue-600'}`"
+        class="geek-tag"
+        :class="auth.user.role === 'super_admin' ? 'geek-tag-primary' : 'geek-tag-ghost'"
       >
         {{ roleLabels[auth.user.role] || auth.user.role }}
       </span>
-      <button class="p-2 text-slate-500 hover:text-blue-700 scale-95 active:opacity-80 transition-all">
-        <el-icon :size="20"><Bell /></el-icon>
+
+      <button class="p-2 text-on-surface-variant hover:text-on-surface transition-colors">
+        <el-icon :size="18"><Bell /></el-icon>
       </button>
-      <button class="p-2 text-slate-500 hover:text-blue-700 scale-95 active:opacity-80 transition-all">
-        <el-icon :size="20"><Setting /></el-icon>
+      <button class="p-2 text-on-surface-variant hover:text-on-surface transition-colors">
+        <el-icon :size="18"><Setting /></el-icon>
       </button>
-      
+
       <el-dropdown trigger="click">
-        <div class="flex items-center cursor-pointer ml-2">
-          <div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-primary font-bold">
+        <div class="flex items-center cursor-pointer ml-1 gap-2">
+          <div class="w-7 h-7 bg-surface-container-high border border-outline flex items-center justify-center text-on-surface font-bold text-xs geek-mono">
             {{ auth.user?.name.charAt(0) }}
           </div>
+          <span class="text-xs font-medium text-on-surface hidden sm:block">{{ auth.user?.name }}</span>
         </div>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item>{{ auth.user?.name }}</el-dropdown-item>
+            <el-dropdown-item disabled class="geek-mono text-xs">{{ auth.user?.name }}</el-dropdown-item>
             <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
           </el-dropdown-menu>
         </template>

@@ -23,31 +23,42 @@ const saveAccount = () => {
 
 <template>
   <main class="max-w-7xl mx-auto">
-    <header class="mb-12 flex justify-between items-end">
+    <header class="mb-6 flex justify-between items-end">
       <div>
-        <h1 class="text-3xl font-black text-on-background tracking-tight mb-2">企业账号管理</h1>
-        <p class="text-on-surface-variant max-w-2xl font-medium">配置并管理平台访问凭证，把控企业资产流转安全。</p>
+        <div class="flex items-baseline gap-3 mb-1">
+          <h1 class="text-2xl font-bold text-on-background tracking-tight">企业账号管理</h1>
+          <span class="geek-label">ACCESS_CONTROL</span>
+        </div>
+        <p class="text-on-surface-variant text-sm max-w-2xl">配置并管理平台访问凭证，把控企业资产流转安全。</p>
       </div>
-      <el-button type="primary" size="large" @click="handleAddAccount">
-        <el-icon class="mr-2"><Plus /></el-icon> 新建账号
+      <el-button type="primary" @click="handleAddAccount">
+        <el-icon class="mr-1"><Plus /></el-icon> 新建账号
       </el-button>
     </header>
 
-    <section class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden p-6">
-      <el-table :data="users" style="width: 100%" row-class-name="hover:bg-surface-container-low transition-colors">
-        <el-table-column prop="id" label="员工工号" width="150" />
+    <section class="geek-panel p-5">
+      <el-table :data="users" style="width: 100%" :header-cell-style="{background:'#f5f5f5',color:'#52525b',fontSize:'12px',textTransform:'uppercase',letterSpacing:'0.05em'}">
+        <el-table-column prop="id" label="员工工号" width="150">
+          <template #default="scope">
+            <span class="font-mono text-xs">{{ scope.row.id }}</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="name" label="姓名" />
         <el-table-column prop="email" label="邮箱" />
         <el-table-column prop="role" label="系统角色">
           <template #default="scope">
-            <el-tag :type="scope.row.role === 'super_admin' ? 'danger' : (scope.row.role === 'admin' ? 'warning' : 'info')">
-              {{ scope.row.role === 'super_admin' ? '超级管理员' : (scope.row.role === 'admin' ? '管理员' : '普通用户') }}
-            </el-tag>
+            <span
+              class="geek-tag"
+              :class="scope.row.role === 'super_admin' ? 'geek-tag-primary' : (scope.row.role === 'admin' ? '' : 'geek-tag-ghost')"
+              :style="scope.row.role === 'admin' ? 'border-color: #d97706; color: #d97706;' : ''"
+            >
+              {{ scope.row.role === 'super_admin' ? 'SUPER_ADMIN' : (scope.row.role === 'admin' ? 'ADMIN' : 'USER') }}
+            </span>
           </template>
         </el-table-column>
         <el-table-column prop="status" label="账号状态">
           <template #default="scope">
-            <span :class="scope.row.status === 'Active' ? 'text-green-600 font-bold' : 'text-gray-400'">{{ scope.row.status }}</span>
+            <span class="font-mono text-xs" :class="scope.row.status === 'Active' ? 'text-on-surface font-bold' : 'text-on-surface-variant'">{{ scope.row.status.toUpperCase() }}</span>
           </template>
         </el-table-column>
         <el-table-column label="操作" align="right" width="150">

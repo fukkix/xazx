@@ -30,7 +30,7 @@ function select(path: string) {
     />
     <div
       v-if="query && filtered.length"
-      class="absolute z-10 mt-1 w-full bg-white border border-outline-variant rounded-lg shadow-lg max-h-40 overflow-auto"
+      class="absolute z-10 mt-1 w-full bg-white border border-outline max-h-40 overflow-auto"
     >
       <div
         v-for="path in filtered"
