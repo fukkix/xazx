@@ -4,13 +4,13 @@
 
 /* 1. Element Plus CSS Variables Override */
 :root {
-  --el-color-primary: #2563EB;
-  --el-color-primary-light-3: #3b82f6;
-  --el-color-primary-light-5: #60a5fa;
-  --el-color-primary-light-7: #93c5fd;
+  --el-color-primary: #1C4792;
+  --el-color-primary-light-3: #2b70e0;
+  --el-color-primary-light-5: #4c95ef;
+  --el-color-primary-light-7: #85bbf8;
   --el-color-primary-light-8: #bfdbfe;
   --el-color-primary-light-9: #dbeafe;
-  --el-color-primary-dark-2: #1d4ed8;
+  --el-color-primary-dark-2: #13379a;
 
   --el-color-success: #16a34a;
   --el-color-success-light-3: #22c55e;
