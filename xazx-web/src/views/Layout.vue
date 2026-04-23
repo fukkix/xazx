@@ -6,9 +6,9 @@ import SideNavBar from '../components/SideNavBar.vue'
 <template>
   <div class="bg-background text-on-background min-h-screen flex">
     <SideNavBar />
-    <div class="flex-1 flex flex-col min-h-screen">
+    <div class="flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden">
       <TopNavBar />
-      <main class="flex-1 p-6">
+      <main class="flex-1 p-6 overflow-auto">
         <router-view />
       </main>
     </div>
