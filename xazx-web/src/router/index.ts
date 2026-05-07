@@ -53,6 +53,12 @@ const router = createRouter({
       redirect: '/knowledge'
     },
 
+    // ── Redirect old materials to new product material page ──
+    {
+      path: '/materials/:category?',
+      redirect: '/products'
+    },
+
     // ── Admin Backend (auth required) ──
     {
       path: '/',
@@ -71,9 +77,9 @@ const router = createRouter({
           component: () => import('../views/AccountManagement.vue')
         },
         {
-          path: 'materials/:category',
-          name: 'materials',
-          component: () => import('../views/MaterialManagement.vue')
+          path: 'products',
+          name: 'products',
+          component: () => import('../views/ProductMaterial.vue')
         },
         {
           path: 'knowledge',

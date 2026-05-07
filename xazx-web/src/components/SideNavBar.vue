@@ -37,17 +37,9 @@ const handleUploadSubmit = () => {
       <div class="px-3 py-2">
         <span class="geek-label px-1">核心资源</span>
       </div>
-      <router-link to="/materials/document" active-class="!text-on-surface border-l-2 border-primary bg-primary/5" class="mx-2 px-3 py-2 flex items-center gap-2 text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all border-l-2 border-transparent">
+      <router-link to="/products" active-class="!text-on-surface border-l-2 border-primary bg-primary/5" class="mx-2 px-3 py-2 flex items-center gap-2 text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all border-l-2 border-transparent">
         <el-icon :size="16"><Document /></el-icon>
-        文档 (Documents)
-      </router-link>
-      <router-link to="/materials/image" active-class="!text-on-surface border-l-2 border-primary bg-primary/5" class="mx-2 px-3 py-2 flex items-center gap-2 text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all border-l-2 border-transparent">
-        <el-icon :size="16"><Picture /></el-icon>
-        图片素材 (Images)
-      </router-link>
-      <router-link to="/materials/ppt" active-class="!text-on-surface border-l-2 border-primary bg-primary/5" class="mx-2 px-3 py-2 flex items-center gap-2 text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all border-l-2 border-transparent">
-        <el-icon :size="16"><DataBoard /></el-icon>
-        演示文稿 (PPTs)
+        产品资料管理
       </router-link>
 
       <div class="px-3 py-2 mt-2">

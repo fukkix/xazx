@@ -19,6 +19,7 @@ const roleLabels: Record<string, string> = {
 
 const adminLinks = [
   { label: '控制台', to: '/', exact: true },
+  { label: '产品资料', to: '/products' },
   { label: '组织架构', to: '/accounts' },
   { label: '前台门户', to: '/portal', external: true }
 ]
