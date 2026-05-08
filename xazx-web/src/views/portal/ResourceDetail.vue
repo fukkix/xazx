@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useMaterialsStore } from '../../stores/materials'
+import { useMaterialsStore, productCategories, fileTypeConfig } from '../../stores/materials'
 
 const route = useRoute()
 const router = useRouter()
@@ -11,22 +11,31 @@ const resourceId = computed(() => Number(route.params.id))
 const resource = computed(() => store.getMaterialById(resourceId.value))
 const relatedResources = computed(() => store.getRelatedMaterials(resourceId.value, 4))
 
-const typeLabels: Record<string, string> = {
-  document: '文档',
-  image: '图片素材',
-  ppt: '演示文稿'
+const getFileTypeLabel = (type: string) => {
+  return (fileTypeConfig as Record<string, { label: string }>)[type]?.label || type
 }
 
-const typeIconColors: Record<string, string> = {
-  document: 'from-blue-400 to-blue-600',
-  image: 'from-emerald-400 to-teal-600',
-  ppt: 'from-amber-400 to-orange-600'
+const getFileTypeGradient = (type: string) => {
+  return (fileTypeConfig as Record<string, { gradient: string }>)[type]?.gradient || 'from-slate-400 to-slate-600'
 }
 
-const typeBadgeStyles: Record<string, string> = {
-  document: 'bg-blue-50 text-blue-600',
-  image: 'bg-emerald-50 text-emerald-600',
-  ppt: 'bg-amber-50 text-amber-600'
+const getFileTypeBadge = (type: string) => {
+  return (fileTypeConfig as Record<string, { badgeClass: string }>)[type]?.badgeClass || 'bg-slate-50 text-slate-600'
+}
+
+const getFileTypeIcon = (type: string) => {
+  return (fileTypeConfig as Record<string, { icon: string }>)[type]?.icon || 'Document'
+}
+
+const getProductLabel = (key?: string) => {
+  if (!key) return ''
+  return productCategories.find(c => c.key === key)?.label || ''
+}
+
+const getProductColor = (key?: string) => {
+  if (!key) return 'text-slate-500 bg-slate-50'
+  const cat = productCategories.find(c => c.key === key)
+  return cat ? `${cat.textColor} ${cat.bgLight}` : 'text-slate-500 bg-slate-50'
 }
 
 const formatNumber = (n: number): string => {
@@ -55,7 +64,7 @@ const handleShare = () => {
         <nav class="flex items-center gap-2 text-sm text-secondary overflow-x-auto whitespace-nowrap no-scrollbar pb-1">
           <router-link to="/portal/resources" class="shrink-0 hover:text-primary transition-colors font-medium">资料中心</router-link>
           <el-icon :size="12" class="shrink-0 text-on-surface-variant/40"><Right /></el-icon>
-          <span class="shrink-0 text-on-surface-variant font-medium">{{ typeLabels[resource.type] }}</span>
+          <span class="shrink-0 text-on-surface-variant font-medium">{{ getFileTypeLabel(resource.type) }}</span>
           <el-icon :size="12" class="shrink-0 text-on-surface-variant/40"><Right /></el-icon>
           <span class="text-on-surface font-semibold truncate max-w-[200px]">{{ resource.name }}</span>
         </nav>
@@ -68,13 +77,13 @@ const handleShare = () => {
         <!-- Left Column: Preview + Details -->
         <div class="space-y-8">
           <!-- Preview Area -->
-          <div :class="`rounded-2xl overflow-hidden bg-gradient-to-br ${typeIconColors[resource.type]} aspect-video flex items-center justify-center relative shadow-lg`">
+          <div :class="`rounded-2xl overflow-hidden bg-gradient-to-br ${getFileTypeGradient(resource.type)} aspect-video flex items-center justify-center relative shadow-lg`">
             <div class="absolute inset-0 bg-black/10"></div>
             <!-- Decorative background shapes -->
             <div class="absolute -bottom-16 -left-16 w-48 h-48 bg-white/5 rounded-full"></div>
             <div class="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
             <el-icon :size="80" class="text-white/80 relative z-10">
-              <component :is="resource.type === 'document' ? 'Document' : resource.type === 'image' ? 'Picture' : 'DataBoard'" />
+              <component :is="getFileTypeIcon(resource.type)" />
             </el-icon>
             <!-- Fullscreen Button Placeholder -->
             <button class="absolute bottom-4 right-4 p-2.5 bg-black/30 backdrop-blur-sm rounded-xl text-white/80 hover:text-white hover:bg-black/50 transition-all z-10">
@@ -84,9 +93,14 @@ const handleShare = () => {
 
           <!-- Resource Title & Description -->
           <div>
-            <span :class="`inline-block text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4 ${typeBadgeStyles[resource.type]}`">
-              {{ typeLabels[resource.type] }}
-            </span>
+            <div class="flex items-center gap-2 mb-4">
+              <span :class="`inline-block text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${getFileTypeBadge(resource.type)}`">
+                {{ getFileTypeLabel(resource.type) }}
+              </span>
+              <span v-if="resource.productCategory && resource.productCategory !== 'all'" :class="`inline-block text-[10px] font-bold px-3 py-1 rounded-full ${getProductColor(resource.productCategory)}`">
+                {{ getProductLabel(resource.productCategory) }}
+              </span>
+            </div>
             <h1 class="font-headline text-2xl md:text-3xl font-extrabold text-on-surface tracking-tight mb-5">
               {{ resource.name }}
             </h1>
@@ -121,7 +135,7 @@ const handleShare = () => {
             <div class="space-y-4">
               <div class="flex justify-between items-center py-2">
                 <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">资源类型</span>
-                <span class="text-sm font-semibold text-on-surface">{{ typeLabels[resource.type] }}</span>
+                <span class="text-sm font-semibold text-on-surface">{{ getFileTypeLabel(resource.type) }}</span>
               </div>
               <div class="h-px bg-surface-container-high/50"></div>
               <div class="flex justify-between items-center py-2">
@@ -190,16 +204,16 @@ const handleShare = () => {
             :to="`/portal/resources/${item.id}`"
             class="group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-[0_2px_12px_rgba(0,52,94,0.04)] hover:shadow-[0_12px_40px_rgba(0,52,94,0.1)] hover:-translate-y-1 transition-all duration-300"
           >
-            <div :class="`h-28 bg-gradient-to-br ${typeIconColors[item.type]} flex items-center justify-center relative overflow-hidden`">
+            <div :class="`h-28 bg-gradient-to-br ${getFileTypeGradient(item.type)} flex items-center justify-center relative overflow-hidden`">
               <div class="absolute inset-0 bg-black/5"></div>
               <div class="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full"></div>
               <el-icon :size="32" class="text-white/90 relative z-10 group-hover:scale-110 transition-transform duration-300">
-                <component :is="item.type === 'document' ? 'Document' : item.type === 'image' ? 'Picture' : 'DataBoard'" />
+                <component :is="getFileTypeIcon(item.type)" />
               </el-icon>
             </div>
             <div class="p-4">
               <h3 class="font-bold text-on-surface text-sm mb-1 line-clamp-1 group-hover:text-primary transition-colors">{{ item.name }}</h3>
-              <span class="text-xs text-on-surface-variant font-mono">{{ item.size }} · {{ typeLabels[item.type] }}</span>
+              <span class="text-xs text-on-surface-variant font-mono">{{ item.size }} · {{ getFileTypeLabel(item.type) }}</span>
             </div>
           </router-link>
         </div>

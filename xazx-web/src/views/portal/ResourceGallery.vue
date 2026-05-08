@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useMaterialsStore } from '../../stores/materials'
+import { useMaterialsStore, productCategories, fileTypeConfig, type ProductCategory } from '../../stores/materials'
 
 const route = useRoute()
 const router = useRouter()
@@ -9,7 +9,7 @@ const store = useMaterialsStore()
 
 const searchInput = ref('')
 const currentPage = ref(1)
-const pageSize = 8
+const pageSize = 12
 
 const categories = [
   { label: '全部', value: 'all' },
@@ -18,28 +18,27 @@ const categories = [
   { label: '演示文稿', value: 'ppt', icon: 'DataBoard' }
 ]
 
-const typeIconColors: Record<string, string> = {
-  document: 'from-blue-400 to-blue-600',
-  image: 'from-emerald-400 to-teal-600',
-  ppt: 'from-amber-400 to-orange-600'
-}
+// Product category filter
+const activeProduct = ref<ProductCategory>('all')
 
-const typeBadgeStyles: Record<string, string> = {
-  document: 'bg-blue-50 text-blue-600',
-  image: 'bg-emerald-50 text-emerald-600',
-  ppt: 'bg-amber-50 text-amber-600'
-}
-
-const typeLabels: Record<string, string> = {
-  document: '文档',
-  image: '图片',
-  ppt: 'PPT'
+const onProductCategoryChange = (category: ProductCategory) => {
+  activeProduct.value = category
+  store.setProductCategory(category)
+  currentPage.value = 1
 }
 
 // Initialize from query params
 onMounted(() => {
   if (route.query.category && typeof route.query.category === 'string') {
     store.setCategory(route.query.category)
+  }
+  if (route.query.product && typeof route.query.product === 'string') {
+    activeProduct.value = route.query.product as ProductCategory
+    store.setProductCategory(activeProduct.value)
+  }
+  if (route.query.q && typeof route.query.q === 'string') {
+    searchInput.value = route.query.q
+    store.setSearch(searchInput.value)
   }
 })
 
@@ -54,26 +53,67 @@ const onCategoryChange = (category: string) => {
   store.setCategory(category)
   currentPage.value = 1
   // Update URL query without reloading
-  router.replace({ query: category !== 'all' ? { category } : {} })
+  const query: Record<string, string> = {}
+  if (category !== 'all') query.category = category
+  if (activeProduct.value !== 'all') query.product = activeProduct.value
+  if (searchInput.value) query.q = searchInput.value
+  router.replace({ query: Object.keys(query).length ? query : undefined })
 }
 
 const onSearch = () => {
   store.setSearch(searchInput.value)
   currentPage.value = 1
+  const query: Record<string, string> = {}
+  if (store.activeCategory !== 'all') query.category = store.activeCategory
+  if (activeProduct.value !== 'all') query.product = activeProduct.value
+  if (searchInput.value) query.q = searchInput.value
+  router.replace({ query: Object.keys(query).length ? query : undefined })
 }
 
 const onClearSearch = () => {
   searchInput.value = ''
   store.setSearch('')
+  currentPage.value = 1
+  const query: Record<string, string> = {}
+  if (store.activeCategory !== 'all') query.category = store.activeCategory
+  if (activeProduct.value !== 'all') query.product = activeProduct.value
+  router.replace({ query: Object.keys(query).length ? query : undefined })
 }
 
-const paginatedMaterials = () => {
+const paginatedMaterials = computed(() => {
   const start = (currentPage.value - 1) * pageSize
   return store.filteredMaterials.slice(start, start + pageSize)
-}
+})
 
 const formatNumber = (n: number): string => {
   return n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n.toString()
+}
+
+const getFileTypeLabel = (type: string) => {
+  return (fileTypeConfig as Record<string, { label: string }>)[type]?.label || type
+}
+
+const getFileTypeGradient = (type: string) => {
+  return (fileTypeConfig as Record<string, { gradient: string }>)[type]?.gradient || 'from-slate-400 to-slate-600'
+}
+
+const getFileTypeBadge = (type: string) => {
+  return (fileTypeConfig as Record<string, { badgeClass: string }>)[type]?.badgeClass || 'bg-slate-50 text-slate-600'
+}
+
+const getFileTypeIcon = (type: string) => {
+  return (fileTypeConfig as Record<string, { icon: string }>)[type]?.icon || 'Document'
+}
+
+const getProductLabel = (key?: ProductCategory) => {
+  if (!key) return ''
+  return productCategories.find(c => c.key === key)?.label || ''
+}
+
+const getProductColor = (key?: ProductCategory) => {
+  if (!key) return 'text-slate-500 bg-slate-50'
+  const cat = productCategories.find(c => c.key === key)
+  return cat ? `${cat.textColor} ${cat.bgLight}` : 'text-slate-500 bg-slate-50'
 }
 </script>
 
@@ -88,7 +128,7 @@ const formatNumber = (n: number): string => {
       <div class="relative z-10 max-w-7xl mx-auto px-6 text-center">
         <span class="text-xs font-bold uppercase tracking-[0.2em] text-primary mb-4 block">Resource Gallery</span>
         <h1 class="font-headline text-3xl md:text-4xl font-extrabold text-on-surface tracking-tight mb-4">资料中心</h1>
-        <p class="text-secondary max-w-lg mx-auto mb-10">检索并浏览所有企业资源文件，按分类快速定位需求</p>
+        <p class="text-secondary max-w-lg mx-auto mb-10">检索并浏览所有企业资源文件，按产品线或分类快速定位需求</p>
 
         <!-- Search Bar -->
         <div class="max-w-2xl mx-auto relative">
@@ -96,7 +136,7 @@ const formatNumber = (n: number): string => {
           <input
             v-model="searchInput"
             type="text"
-            placeholder="搜索资源名称、描述或标签..."
+            placeholder="搜索资源名称、描述、标签或产品线..."
             class="w-full pl-12 sm:pl-14 pr-[80px] sm:pr-32 py-4 bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,52,94,0.06)] text-on-surface placeholder:text-secondary/50 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm sm:text-base"
             @keyup.enter="onSearch"
           >
@@ -119,57 +159,98 @@ const formatNumber = (n: number): string => {
       </div>
     </section>
 
-    <!-- ═══════════ Content Area ═══════════ -->
-    <section class="max-w-7xl mx-auto px-6 py-12">
-      <!-- Category Filter Chips -->
-      <div class="flex flex-nowrap sm:flex-wrap items-center gap-2 mb-10 overflow-x-auto no-scrollbar pb-2 sm:pb-0">
+    <!-- ═══════════ Product Category Filter ═══════════ -->
+    <section class="max-w-7xl mx-auto px-6 pt-10 pb-4">
+      <div class="flex items-center gap-2 mb-3">
+        <el-icon :size="14" class="text-primary"><Filter /></el-icon>
+        <span class="text-xs font-bold uppercase tracking-[0.15em] text-primary">产品分类</span>
+      </div>
+      <div class="flex flex-nowrap gap-3 overflow-x-auto no-scrollbar pb-2">
         <button
-          v-for="cat in categories"
-          :key="cat.value"
-          @click="onCategoryChange(cat.value)"
-          class="shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200"
-          :class="store.activeCategory === cat.value
+          v-for="cat in productCategories"
+          :key="cat.key"
+          @click="onProductCategoryChange(cat.key)"
+          class="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200"
+          :class="activeProduct === cat.key
             ? 'bg-primary text-on-primary shadow-md shadow-primary/20'
             : 'bg-surface-container-low text-secondary hover:bg-surface-container-high hover:text-on-surface'"
         >
-          <span class="flex items-center gap-2">
-            <el-icon v-if="cat.icon" :size="14"><component :is="cat.icon" /></el-icon>
-            {{ cat.label }}
+          <el-icon :size="14"><component :is="cat.icon" /></el-icon>
+          <span>{{ cat.label }}</span>
+          <span
+            v-if="(store.productCategoryCounts[cat.key] ?? 0) > 0"
+            class="text-[10px] px-1.5 py-0.5 rounded-full font-mono"
+            :class="activeProduct === cat.key ? 'bg-white/20 text-white' : 'bg-surface-container-high text-on-surface-variant'"
+          >
+            {{ store.productCategoryCounts[cat.key] ?? 0 }}
           </span>
         </button>
-        <span class="ml-auto text-xs font-bold text-on-surface-variant uppercase tracking-[0.1em] shrink-0">
+      </div>
+    </section>
+
+    <!-- ═══════════ Content Area ═══════════ -->
+    <section class="max-w-7xl mx-auto px-6 py-8 pb-20">
+      <!-- Category Filter Chips + Result Count -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div class="flex flex-nowrap sm:flex-wrap items-center gap-2 overflow-x-auto no-scrollbar pb-2 sm:pb-0">
+          <button
+            v-for="cat in categories"
+            :key="cat.value"
+            @click="onCategoryChange(cat.value)"
+            class="shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200"
+            :class="store.activeCategory === cat.value
+              ? 'bg-surface-container-high text-on-surface ring-1 ring-outline-variant'
+              : 'bg-surface-container-low text-secondary hover:bg-surface-container-high hover:text-on-surface'"
+          >
+            <span class="flex items-center gap-2">
+              <el-icon v-if="cat.icon" :size="14"><component :is="cat.icon" /></el-icon>
+              {{ cat.label }}
+            </span>
+          </button>
+        </div>
+        <span class="text-xs font-bold text-on-surface-variant uppercase tracking-[0.1em] shrink-0">
           共 {{ store.filteredMaterials.length }} 项资源
         </span>
       </div>
 
       <!-- Resource Cards Grid -->
-      <div v-if="paginatedMaterials().length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div v-if="paginatedMaterials.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <router-link
-          v-for="item in paginatedMaterials()"
+          v-for="item in paginatedMaterials"
           :key="item.id"
           :to="`/portal/resources/${item.id}`"
           class="group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-[0_2px_12px_rgba(0,52,94,0.04)] hover:shadow-[0_12px_40px_rgba(0,52,94,0.1)] hover:-translate-y-1 transition-all duration-300"
         >
           <!-- Card Header with Type Visual -->
-          <div :class="`h-32 bg-gradient-to-br ${typeIconColors[item.type]} flex items-center justify-center relative overflow-hidden`">
+          <div :class="`h-32 bg-gradient-to-br ${getFileTypeGradient(item.type)} flex items-center justify-center relative overflow-hidden`">
             <div class="absolute inset-0 bg-black/5"></div>
             <!-- Decorative circle -->
             <div class="absolute -bottom-6 -right-6 w-24 h-24 bg-white/10 rounded-full"></div>
             <el-icon :size="40" class="text-white/90 relative z-10 group-hover:scale-110 transition-transform duration-300">
-              <component :is="item.type === 'document' ? 'Document' : item.type === 'image' ? 'Picture' : 'DataBoard'" />
+              <component :is="getFileTypeIcon(item.type)" />
             </el-icon>
           </div>
 
           <!-- Card Body -->
           <div class="p-5">
+            <!-- Product Category Tag -->
+            <div class="mb-2">
+              <span v-if="item.productCategory && item.productCategory !== 'all'" :class="`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${getProductColor(item.productCategory)}`">
+                {{ getProductLabel(item.productCategory) }}
+              </span>
+              <span v-else class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full text-slate-400 bg-slate-50">
+                未分类
+              </span>
+            </div>
+
             <h3 class="font-bold text-on-surface text-sm mb-2 line-clamp-1 group-hover:text-primary transition-colors">{{ item.name }}</h3>
             <p class="text-xs text-secondary line-clamp-2 leading-relaxed mb-4">{{ item.description }}</p>
 
             <!-- Meta Row -->
             <div class="flex items-center justify-between mb-4">
               <span class="text-xs text-on-surface-variant font-mono">{{ item.size }}</span>
-              <span :class="`text-[10px] font-bold px-2.5 py-1 rounded-full ${typeBadgeStyles[item.type]}`">
-                {{ typeLabels[item.type] }}
+              <span :class="`text-[10px] font-bold px-2.5 py-1 rounded-full ${getFileTypeBadge(item.type)}`">
+                {{ getFileTypeLabel(item.type) }}
               </span>
             </div>
 
@@ -200,7 +281,30 @@ const formatNumber = (n: number): string => {
       <div v-else class="text-center py-24">
         <el-icon :size="48" class="text-secondary/30 mb-4"><Search /></el-icon>
         <h3 class="font-headline text-xl font-bold text-on-surface mb-2">未找到匹配资源</h3>
-        <p class="text-secondary text-sm">尝试修改搜索关键词或切换分类筛选</p>
+        <p class="text-secondary text-sm">尝试修改搜索关键词、切换产品分类或文件类型筛选</p>
+        <div v-if="searchInput || activeProduct !== 'all' || store.activeCategory !== 'all'" class="mt-6 flex justify-center gap-3">
+          <button
+            v-if="searchInput"
+            @click="onClearSearch"
+            class="px-4 py-2 text-xs font-bold text-primary hover:text-primary-dim transition-colors"
+          >
+            清除搜索
+          </button>
+          <button
+            v-if="activeProduct !== 'all'"
+            @click="onProductCategoryChange('all')"
+            class="px-4 py-2 text-xs font-bold text-primary hover:text-primary-dim transition-colors"
+          >
+            重置产品分类
+          </button>
+          <button
+            v-if="store.activeCategory !== 'all'"
+            @click="onCategoryChange('all')"
+            class="px-4 py-2 text-xs font-bold text-primary hover:text-primary-dim transition-colors"
+          >
+            重置文件类型
+          </button>
+        </div>
       </div>
 
       <!-- Pagination -->
@@ -236,7 +340,7 @@ const formatNumber = (n: number): string => {
   display: none;
 }
 .no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 </style>
