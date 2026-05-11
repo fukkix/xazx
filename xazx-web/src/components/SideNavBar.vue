@@ -41,13 +41,9 @@ const auth = useAuthStore()
           <el-icon :size="14"><Monitor /></el-icon> 前台门户
           <el-icon :size="10" class="ml-auto opacity-40"><TopRight /></el-icon>
         </router-link>
-        <a href="#" class="text-on-surface-variant hover:text-on-surface px-2 py-1.5 flex items-center gap-2 text-xs font-medium transition-colors">
+        <router-link to="/help" class="text-on-surface-variant hover:text-on-surface px-2 py-1.5 flex items-center gap-2 text-xs font-medium transition-colors">
           <el-icon :size="14"><Help /></el-icon> 使用帮助
-        </a>
-        <a href="http://localhost:5173" target="_blank" rel="noopener noreferrer" class="text-on-surface-variant hover:text-on-surface px-2 py-1.5 flex items-center gap-2 text-xs font-medium transition-colors">
-          <el-icon :size="14"><DataLine /></el-icon> 甘特图工具
-          <el-icon :size="10" class="ml-auto opacity-40"><TopRight /></el-icon>
-        </a>
+        </router-link>
       </div>
     </div>
 

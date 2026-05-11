@@ -86,6 +86,11 @@ const router = createRouter({
           path: 'knowledge/manual-entry',
           name: 'manual-wiki-entry',
           component: () => import('../views/ManualWikiEntry.vue')
+        },
+        {
+          path: 'help',
+          name: 'help',
+          component: () => import('../views/HelpCenter.vue')
         }
       ]
     },
