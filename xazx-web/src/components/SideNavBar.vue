@@ -33,18 +33,17 @@ const auth = useAuthStore()
         <el-icon :size="16"><User /></el-icon>
         账号及权限管理
       </router-link>
+      <router-link to="/portal" target="_blank" active-class="!text-on-surface border-l-2 border-primary bg-primary/5" class="mx-2 px-3 py-2 flex items-center gap-2 text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all border-l-2 border-transparent">
+        <el-icon :size="16"><Monitor /></el-icon>
+        前台门户
+        <el-icon :size="10" class="ml-auto opacity-40"><TopRight /></el-icon>
+      </router-link>
     </nav>
 
-    <div class="p-3 space-y-2 border-t border-outline">
-      <div class="pt-2 space-y-0">
-        <router-link to="/portal" target="_blank" class="text-on-surface-variant hover:text-on-surface px-2 py-1.5 flex items-center gap-2 text-xs font-medium transition-colors">
-          <el-icon :size="14"><Monitor /></el-icon> 前台门户
-          <el-icon :size="10" class="ml-auto opacity-40"><TopRight /></el-icon>
-        </router-link>
-        <router-link to="/help" class="text-on-surface-variant hover:text-on-surface px-2 py-1.5 flex items-center gap-2 text-xs font-medium transition-colors">
-          <el-icon :size="14"><Help /></el-icon> 使用帮助
-        </router-link>
-      </div>
+    <div class="p-3 border-t border-outline">
+      <router-link to="/help" class="text-on-surface-variant hover:text-on-surface px-2 py-1.5 flex items-center gap-2 text-xs font-medium transition-colors">
+        <el-icon :size="14"><Help /></el-icon> 使用帮助
+      </router-link>
     </div>
 
 
