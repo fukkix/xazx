@@ -4,7 +4,7 @@ import { ref, computed } from 'vue'
 // ============ 产品分类定义 ============
 
 export type FileType = 'document' | 'image' | 'ppt'
-export type ProductCategory = 'all' | 'waf' | 'dynamic-defense' | 'traffic-analysis' | 'compliance' | 'situation-awareness' | 'other'
+export type ProductCategory = 'all' | 'waf' | 'dynamic-defense' | 'traffic-analysis' | 'situation-awareness' | 'api-module' | 'other'
 
 export interface MaterialItem {
   id: number
@@ -26,8 +26,8 @@ export const productCategories = [
   { key: 'waf' as ProductCategory, label: 'WAF / Web应用防火墙', icon: 'Shield', color: 'from-blue-500 to-blue-700', bgLight: 'bg-blue-50', textColor: 'text-blue-600' },
   { key: 'dynamic-defense' as ProductCategory, label: '动态防御', icon: 'Refresh', color: 'from-emerald-500 to-teal-700', bgLight: 'bg-emerald-50', textColor: 'text-emerald-600' },
   { key: 'traffic-analysis' as ProductCategory, label: '全流量分析', icon: 'DataLine', color: 'from-violet-500 to-purple-700', bgLight: 'bg-violet-50', textColor: 'text-violet-600' },
-  { key: 'compliance' as ProductCategory, label: '等保合规', icon: 'Reading', color: 'from-amber-500 to-orange-700', bgLight: 'bg-amber-50', textColor: 'text-amber-600' },
-  { key: 'situation-awareness' as ProductCategory, label: '态势感知', icon: 'View', color: 'from-rose-500 to-red-700', bgLight: 'bg-rose-50', textColor: 'text-rose-600' },
+  { key: 'situation-awareness' as ProductCategory, label: '网站监测系统', icon: 'View', color: 'from-rose-500 to-red-700', bgLight: 'bg-rose-50', textColor: 'text-rose-600' },
+  { key: 'api-module' as ProductCategory, label: 'API模块', icon: 'Reading', color: 'from-amber-500 to-orange-700', bgLight: 'bg-amber-50', textColor: 'text-amber-600' },
   { key: 'other' as ProductCategory, label: '其他安全产品', icon: 'MoreFilled', color: 'from-cyan-500 to-sky-700', bgLight: 'bg-cyan-50', textColor: 'text-cyan-600' },
 ]
 

@@ -116,14 +116,16 @@ const getProductColor = (key?: ProductCategory) => {
 
         <!-- Main Search Bar -->
         <div class="max-w-2xl mx-auto relative">
-          <el-icon class="absolute left-5 top-1/2 -translate-y-1/2 text-secondary z-10" :size="20"><Search /></el-icon>
+          <div class="absolute left-5 top-1/2 -translate-y-1/2 z-10 text-secondary">
+            <el-icon :size="20"><Search /></el-icon>
+          </div>
           <input
             v-model="searchInput"
             type="text"
             placeholder="搜索资料名称、描述、标签或产品线..."
-            class="w-full pl-12 sm:pl-14 pr-[100px] sm:pr-36 py-4 bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,52,94,0.08)] text-on-surface placeholder:text-secondary/40 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm sm:text-base"
+            class="w-full pl-12 sm:pl-14 pr-[120px] sm:pr-40 py-4 bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,52,94,0.08)] text-on-surface placeholder:text-secondary/40 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm sm:text-base"
           >
-          <div class="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 flex gap-2">
+          <div class="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
             <button
               v-if="searchInput"
               @click="searchInput = ''"

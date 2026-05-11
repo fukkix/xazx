@@ -60,7 +60,8 @@ const productLineOptions = [
   { label: 'WAF', value: 'WAF' },
   { label: '动态防御', value: '动态防御' },
   { label: '全流量分析', value: '全流量分析' },
-  { label: '态势感知', value: '态势感知' },
+  { label: '网站监测系统', value: '网站监测系统' },
+  { label: 'API模块', value: 'API模块' },
   { label: '大模型安全', value: '大模型安全' },
   { label: '其他', value: '其他' }
 ]
