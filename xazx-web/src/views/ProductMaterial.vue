@@ -231,7 +231,7 @@ onMounted(() => {
           <span class="p-2 bg-surface-container-high text-primary border border-outline inline-flex">
             <el-icon :size="20"><Box /></el-icon>
           </span>
-          <span class="geek-tag geek-tag-primary">LIVE</span>
+          <span class="geek-tag geek-tag-live">LIVE</span>
         </div>
         <h3 class="geek-label mb-1">资料总数量</h3>
         <div class="text-3xl font-bold text-on-surface font-mono">{{ stats.total }}</div>

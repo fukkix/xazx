@@ -284,6 +284,12 @@
   color: #ffffff;
 }
 
+.geek-tag-live {
+  background: #1bb0aa;
+  border-color: #098782;
+  color: #ffffff;
+}
+
 .geek-tag-ghost {
   background: transparent;
   border-color: #d4d4d8;
