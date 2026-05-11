@@ -1,38 +1,19 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElNotification } from 'element-plus'
-import { CircleCheck, Document, Loading, Refresh, UploadFilled, Warning } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { CircleCheck, Document, EditPen, Refresh, Warning } from '@element-plus/icons-vue'
 import {
   knowledgeApi,
-  type IngestResponse,
   type LintResponse,
   type LogsResponse,
   type StatsResponse,
-  type TaskStatusResponse
 } from '../services/knowledge'
 
 const router = useRouter()
 
-type TaskRow = {
-  task_id: string
-  filename: string
-  domain: string
-  status: 'processing' | 'success' | 'error'
-  progress: string
-  startedAt: string
-  processing_time_ms?: number
-  error?: string
-  wiki_page_title?: string
-  wiki_page_path?: string
-}
-
 const selectedDomain = ref('产品知识')
 const selectedProductLine = ref('')
-const selectedFiles = ref<File[]>([])
-const uploading = ref(false)
-const uploadProgress = ref(0)
-const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const stats = ref<StatsResponse | null>(null)
 const isLoadingStats = ref(false)
@@ -44,9 +25,6 @@ const logs = ref<LogsResponse | null>(null)
 const isLoadingLogs = ref(false)
 const selectedLogType = ref('')
 const logLimit = ref(20)
-
-const tasks = ref<TaskRow[]>([])
-const pollingTimers = new Map<string, number>()
 
 const domainOptions = [
   { label: '产品知识', value: '产品知识' },
@@ -84,184 +62,6 @@ const domainStatsRows = computed(() => {
     sub: data.sub ?? {}
   }))
 })
-
-const progressTextMap: Record<string, string> = {
-  uploading: '上传中',
-  parsing: '解析文档',
-  generating: '生成 Wiki 页面',
-  updating_index: '更新索引',
-  done: '完成'
-}
-
-const progressPercentMap: Record<string, number> = {
-  uploading: 20,
-  parsing: 40,
-  generating: 70,
-  updating_index: 90,
-  done: 100
-}
-
-const statusTagType = (status: TaskRow['status']) => {
-  if (status === 'success') return 'success'
-  if (status === 'error') return 'danger'
-  return 'warning'
-}
-
-const formatTaskProgress = (progress: string) => progressTextMap[progress] ?? progress
-const taskPercent = (progress: string) => progressPercentMap[progress] ?? 10
-
-const resetFileInput = () => {
-  selectedFiles.value = []
-  if (fileInputRef.value) {
-    fileInputRef.value.value = ''
-  }
-}
-
-const handleFileChange = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  selectedFiles.value = input.files ? Array.from(input.files) : []
-}
-
-const upsertTask = (payload: TaskStatusResponse, fallback?: { filename: string; domain: string }) => {
-  const idx = tasks.value.findIndex((it) => it.task_id === payload.task_id)
-  const existing = idx >= 0 ? tasks.value[idx] : null
-  const next: TaskRow = {
-    task_id: payload.task_id,
-    filename: existing ? existing.filename : (fallback?.filename ?? '未知文件'),
-    domain: existing ? existing.domain : (fallback?.domain ?? selectedDomain.value),
-    status: payload.status,
-    progress: payload.progress,
-    startedAt: existing ? existing.startedAt : new Date().toLocaleString('zh-CN'),
-    processing_time_ms: payload.processing_time_ms,
-    error: payload.error,
-    wiki_page_title: payload.wiki_page_title,
-    wiki_page_path: payload.wiki_page_path
-  }
-
-  if (idx >= 0) {
-    tasks.value[idx] = next
-  } else {
-    tasks.value.unshift(next)
-  }
-}
-
-const stopPolling = (taskId: string) => {
-  const timer = pollingTimers.get(taskId)
-  if (timer) {
-    window.clearTimeout(timer)
-    pollingTimers.delete(taskId)
-  }
-}
-
-const shouldOpenManualEntry = (errorMessage?: string) => {
-  if (!errorMessage) return false
-  const msg = errorMessage.toLowerCase()
-  return (
-    msg.includes('failed to parse docx') ||
-    msg.includes('there is no item named') ||
-    msg.includes('null')
-  )
-}
-
-const pollTask = async (taskId: string, fallback?: { filename: string; domain: string }) => {
-  try {
-    const status = await knowledgeApi.getTaskStatus(taskId)
-    upsertTask(status, fallback)
-
-    if (status.status === 'success') {
-      stopPolling(taskId)
-      ElNotification({
-        title: '入库成功',
-        message: `${status.wiki_page_title ?? 'Wiki 页面'} 已生成`,
-        type: 'success',
-        duration: 4000
-      })
-      await Promise.all([loadStats(), loadLogs()])
-      return
-    }
-
-    if (status.status === 'error') {
-      stopPolling(taskId)
-      ElNotification({
-        title: '入库失败',
-        message: status.error ?? '未知错误',
-        type: 'error',
-        duration: 5000
-      })
-
-      if (shouldOpenManualEntry(status.error)) {
-        ElMessage.warning('检测到 DOCX 图片引用异常，已切换到手动填写页面')
-        await router.push({
-          path: '/knowledge/manual-entry',
-          query: {
-            file: fallback?.filename ?? '',
-            domain: fallback?.domain ?? selectedDomain.value,
-            productLine: selectedProductLine.value,
-            reason: 'docx_image_relationship_error'
-          }
-        })
-      }
-      return
-    }
-
-    const timer = window.setTimeout(() => pollTask(taskId, fallback), 2000)
-    pollingTimers.set(taskId, timer)
-  } catch (error: any) {
-    stopPolling(taskId)
-    ElMessage.error(`任务状态查询失败: ${error.message ?? '未知错误'}`)
-  }
-}
-
-const submitOne = async (file: File): Promise<IngestResponse> => {
-  const progressCb = selectedFiles.value.length === 1
-    ? (pct: number) => {
-        uploadProgress.value = pct
-      }
-    : () => {}
-
-  return knowledgeApi.ingestWithProgress(file, selectedDomain.value, progressCb, selectedProductLine.value || undefined)
-}
-
-const handleIngest = async () => {
-  if (selectedFiles.value.length === 0) {
-    ElMessage.warning('请先选择文件')
-    return
-  }
-
-  uploading.value = true
-  uploadProgress.value = 0
-
-  try {
-    const files = [...selectedFiles.value]
-    const submitted: { task_id: string; file: File }[] = []
-
-    for (const file of files) {
-      const res = await submitOne(file)
-      submitted.push({ task_id: res.task_id, file })
-      upsertTask(
-        {
-          task_id: res.task_id,
-          status: 'processing',
-          progress: 'uploading'
-        },
-        { filename: file.name, domain: selectedDomain.value }
-      )
-    }
-
-    for (const item of submitted) {
-      pollTask(item.task_id, { filename: item.file.name, domain: selectedDomain.value })
-    }
-
-    ElMessage.success(`已提交 ${submitted.length} 个文件，正在构建 LLM Wiki`)
-    resetFileInput()
-    await Promise.all([loadStats(), loadLogs()])
-  } catch (error: any) {
-    ElMessage.error(`入库失败: ${error.message ?? '未知错误'}`)
-  } finally {
-    uploading.value = false
-    uploadProgress.value = 0
-  }
-}
 
 const loadStats = async () => {
   isLoadingStats.value = true
@@ -301,12 +101,7 @@ onMounted(async () => {
   await Promise.all([loadStats(), loadLogs()])
 })
 
-onBeforeUnmount(() => {
-  for (const timer of pollingTimers.values()) {
-    window.clearTimeout(timer)
-  }
-  pollingTimers.clear()
-})
+
 </script>
 
 <template>
@@ -317,15 +112,15 @@ onBeforeUnmount(() => {
           <h1 class="text-2xl font-bold text-on-surface">知识库管理</h1>
           <span class="geek-label">LLM_WIKI_SYSTEM</span>
         </div>
-        <p class="text-sm text-secondary mt-1">上传文档并触发 LLM Wiki 构建</p>
+        <p class="text-sm text-secondary mt-1">手动编写资料并管理知识库内容</p>
       </div>
       <el-button type="primary" :icon="Refresh" @click="loadStats(); loadLogs()">刷新</el-button>
     </div>
 
     <div class="geek-panel p-5">
       <div class="flex items-center gap-2 mb-4 pb-3 border-b border-outline">
-        <el-icon><UploadFilled /></el-icon>
-        <span class="font-semibold text-sm">文档入库</span>
+        <el-icon><Document /></el-icon>
+        <span class="font-semibold text-sm">资料编写</span>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -337,62 +132,16 @@ onBeforeUnmount(() => {
           <el-option v-for="opt in productLineOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
         </el-select>
 
-        <input
-          ref="fileInputRef"
-          type="file"
-          multiple
-          accept=".pdf,.docx,.pptx,.png,.jpg,.jpeg"
-          class="block w-full text-sm text-on-surface file:mr-3 file:py-2 file:px-4 file:border-0 file:bg-primary file:text-on-primary"
-          @change="handleFileChange"
-        >
-      </div>
-
-      <div class="mt-4 flex items-center justify-between gap-4">
-        <div class="text-sm text-secondary font-mono">
-          {{ selectedFiles.length > 0 ? `已选择 ${selectedFiles.length} 个文件` : '未选择文件' }}
-        </div>
-        <el-button type="primary" :loading="uploading" :disabled="selectedFiles.length === 0" @click="handleIngest">
-          {{ uploading ? '提交中...' : '开始入库并构建 Wiki' }}
+        <el-button type="primary" @click="router.push({
+          path: '/knowledge/manual-entry',
+          query: {
+            mode: 'wiki',
+            domain: selectedDomain,
+            productLine: selectedProductLine
+          }
+        })">
+          <el-icon class="mr-1"><EditPen /></el-icon> 手动编写资料
         </el-button>
-      </div>
-
-      <div v-if="uploading && uploadProgress > 0" class="mt-3">
-        <el-progress :percentage="uploadProgress" :stroke-width="8" />
-      </div>
-    </div>
-
-    <div class="geek-panel p-5">
-      <div class="flex items-center gap-2 mb-4 pb-3 border-b border-outline">
-        <el-icon><Loading /></el-icon>
-        <span class="font-semibold text-sm">入库任务</span>
-        <span class="geek-label ml-auto">{{ tasks.length }} TASKS</span>
-      </div>
-
-      <div v-if="tasks.length === 0" class="text-secondary text-sm">暂无任务</div>
-      <div v-else class="space-y-3">
-        <div v-for="row in tasks" :key="row.task_id" class="border border-outline p-4">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <p class="font-medium text-on-surface text-sm">{{ row.filename }}</p>
-              <p class="text-xs text-secondary font-mono">{{ row.domain }} | {{ row.startedAt }}</p>
-            </div>
-            <el-tag :type="statusTagType(row.status)">{{ row.status.toUpperCase() }}</el-tag>
-          </div>
-
-          <div class="mt-3">
-            <div class="flex items-center justify-between mb-1 text-xs text-secondary font-mono">
-              <span>{{ formatTaskProgress(row.progress) }}</span>
-              <span>{{ taskPercent(row.progress) }}%</span>
-            </div>
-            <el-progress :percentage="taskPercent(row.progress)" :status="row.status === 'error' ? 'exception' : row.status === 'success' ? 'success' : ''" :stroke-width="6" />
-          </div>
-
-          <p v-if="row.wiki_page_title" class="text-sm text-primary mt-2 font-mono">
-            {{ row.wiki_page_title }}
-          </p>
-          <p v-if="row.wiki_page_path" class="text-xs text-secondary font-mono">{{ row.wiki_page_path }}</p>
-          <p v-if="row.error" class="text-sm text-error mt-2">{{ row.error }}</p>
-        </div>
       </div>
     </div>
 

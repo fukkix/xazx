@@ -17,10 +17,38 @@ const route = useRoute()
 const router = useRouter()
 const store = useDocEditorStore()
 
+// 模式识别：wiki（知识库）或 product（产品资料）
+const mode = ref<'wiki' | 'product'>((route.query.mode as string) === 'product' ? 'product' : 'wiki')
+
 // 来源信息
 const sourceFile = ref(String(route.query.file ?? ''))
 const domain = ref(String(route.query.domain ?? '产品知识'))
 const productLine = ref(String(route.query.productLine ?? ''))
+
+// 产品资料模式专用
+const uploadProduct = ref(String(route.query.product ?? ''))
+const uploadFileCategory = ref('')
+
+const productOptions = [
+  { id: '1', name: '网站监测系统', code: 'website_monitor' },
+  { id: '2', name: 'WAF', code: 'waf' },
+  { id: '3', name: '动态防御', code: 'dynamic_defense' },
+  { id: '4', name: '全流量分析', code: 'traffic_analysis' },
+  { id: '5', name: 'API模块', code: 'api_module' },
+  { id: '6', name: '大模型安全', code: 'llm_security' },
+  { id: '7', name: '其他', code: 'other' },
+]
+
+const fileCategoryOptions = [
+  { id: '1', name: '白皮书', code: 'whitepaper' },
+  { id: '2', name: '操作手册', code: 'manual' },
+  { id: '3', name: '功能清单', code: 'feature_list' },
+  { id: '4', name: '功能说明', code: 'feature_desc' },
+  { id: '5', name: '宣传PPT', code: 'promo_ppt' },
+  { id: '6', name: '宣传折页', code: 'promo_brochure' },
+  { id: '7', name: 'FQA', code: 'fqa' },
+  { id: '8', name: '相关图片资料', code: 'images' },
+]
 
 // 页面元信息
 const title = ref('')
@@ -99,6 +127,11 @@ function discardDraft() {
 }
 
 const domainOptions = ['产品知识', '技术文档', '销售支持', '行业合规', '内部运营']
+
+const modeTitle = computed(() => mode.value === 'wiki' ? '手动编辑 Wiki 页面' : '手动编辑产品资料')
+const modeLabel = computed(() => mode.value === 'wiki' ? 'STRUCTURED_EDITOR' : 'PRODUCT_DOC_EDITOR')
+const backTarget = computed(() => mode.value === 'wiki' ? '/knowledge' : '/products')
+const submitButtonText = computed(() => mode.value === 'wiki' ? '提交到知识库' : '提交到产品资料')
 const audienceOptions = ['研发', '售前', '售后', '销售']
 
 // 片段库
@@ -286,28 +319,52 @@ const imageFiles = computed(() => {
   return files
 })
 
-const canSubmit = computed(() => title.value.trim() && store.docTree.length > 0 && !isSubmitting.value)
+const canSubmit = computed(() => {
+  if (!title.value.trim() || store.docTree.length === 0 || isSubmitting.value) return false
+  if (mode.value === 'product') {
+    return !!uploadProduct.value && !!uploadFileCategory.value
+  }
+  return true
+})
 
 async function submitPage() {
   if (!canSubmit.value) return
   isSubmitting.value = true
   try {
     const content = store.toMarkdown()
-    const result = await knowledgeApi.manualSubmit({
-      title: title.value.trim(),
-      domain: domain.value,
-      summary: summary.value.trim(),
-      content,
-      keywords: keywords.value,
-      audience: audience.value.join(','),
-      relatedTopics: relatedTopics.value,
-      productLine: productLine.value || undefined,
-      sourceFile: sourceFile.value || undefined,
-      images: imageFiles.value,
-    })
-    store.clearDraft()
-    ElMessage.success(`Wiki 页面已保存: ${result.wiki_page_title}（图片 ${result.images_saved} 张）`)
-    router.push('/knowledge')
+    if (mode.value === 'wiki') {
+      const result = await knowledgeApi.manualSubmit({
+        title: title.value.trim(),
+        domain: domain.value,
+        summary: summary.value.trim(),
+        content,
+        keywords: keywords.value,
+        audience: audience.value.join(','),
+        relatedTopics: relatedTopics.value,
+        productLine: productLine.value || undefined,
+        sourceFile: sourceFile.value || undefined,
+        images: imageFiles.value,
+      })
+      store.clearDraft()
+      ElMessage.success(`Wiki 页面已保存: ${result.wiki_page_title}（图片 ${result.images_saved} 张）`)
+      router.push('/knowledge')
+    } else {
+      // product 模式：将 Markdown 转为文件上传到 PHP 后端
+      const blob = new Blob([content], { type: 'text/markdown' })
+      const file = new File([blob], `${title.value.trim() || '未命名'}.md`, { type: 'text/markdown' })
+      const formData = new FormData()
+      formData.append('product_id', uploadProduct.value)
+      formData.append('category_id', uploadFileCategory.value)
+      formData.append('title', title.value.trim())
+      formData.append('description', summary.value.trim())
+      formData.append('file', file)
+      const res = await fetch('/api/upload.php', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.message || '上传失败')
+      store.clearDraft()
+      ElMessage.success('产品资料已保存')
+      router.push('/products')
+    }
   } catch (e: unknown) {
     ElMessage.error(`提交失败: ${e instanceof Error ? e.message : e}`)
   } finally {
@@ -326,7 +383,7 @@ watch(() => store.docTree, () => {
 }, { deep: true })
 
 function goBack() {
-  router.push('/knowledge')
+  router.push(backTarget.value)
 }
 
 function onCanvasClick(e: MouseEvent) {
@@ -653,15 +710,15 @@ async function onDrop(e: DragEvent) {
     <div class="flex items-center justify-between">
       <div>
         <div class="flex items-baseline gap-3 mb-1">
-          <h1 class="text-2xl font-bold text-on-surface">手动编辑 Wiki 页面</h1>
-          <span class="geek-label">STRUCTURED_EDITOR</span>
+          <h1 class="text-2xl font-bold text-on-surface">{{ modeTitle }}</h1>
+          <span class="geek-label">{{ modeLabel }}</span>
         </div>
         <p class="text-sm text-secondary mt-1">结构化编辑器：支持层级、表格、步骤、截图标注与 Word 导入</p>
       </div>
       <div class="flex items-center gap-3">
         <div v-if="lastSavedAt" class="text-xs text-secondary">草稿保存于 {{ lastSavedAt }}</div>
         <el-switch v-model="autoSaveEnabled" active-text="自动保存" size="small" />
-        <el-button @click="goBack">返回知识库管理</el-button>
+        <el-button @click="goBack">{{ mode.value === 'wiki' ? '返回知识库管理' : '返回产品资料管理' }}</el-button>
       </div>
     </div>
 
@@ -676,15 +733,27 @@ async function onDrop(e: DragEvent) {
           <label class="block text-xs text-secondary mb-1">页面标题 <span class="text-red-500">*</span></label>
           <el-input v-model="title" placeholder="输入页面标题" maxlength="100" show-word-limit />
         </div>
-        <div>
+        <div v-if="mode === 'wiki'">
           <label class="block text-xs text-secondary mb-1">知识域 <span class="text-red-500">*</span></label>
           <el-select v-model="domain" class="w-full">
             <el-option v-for="d in domainOptions" :key="d" :label="d" :value="d" />
           </el-select>
         </div>
-        <div>
+        <div v-else>
+          <label class="block text-xs text-secondary mb-1">产品分类 <span class="text-red-500">*</span></label>
+          <el-select v-model="uploadProduct" class="w-full" placeholder="选择产品">
+            <el-option v-for="p in productOptions" :key="p.id" :label="p.name" :value="p.id" />
+          </el-select>
+        </div>
+        <div v-if="mode === 'wiki'">
           <label class="block text-xs text-secondary mb-1">产品线</label>
           <el-input v-model="productLine" placeholder="可选，如 WAF、动态防御" />
+        </div>
+        <div v-else>
+          <label class="block text-xs text-secondary mb-1">资料类型 <span class="text-red-500">*</span></label>
+          <el-select v-model="uploadFileCategory" class="w-full" placeholder="选择资料类型">
+            <el-option v-for="c in fileCategoryOptions" :key="c.id" :label="c.name" :value="c.id" />
+          </el-select>
         </div>
         <div>
           <label class="block text-xs text-secondary mb-1">来源文件</label>
@@ -885,7 +954,7 @@ async function onDrop(e: DragEvent) {
       <el-button @click="goBack">取消</el-button>
       <el-button type="info" size="large" @click="doSaveDraft(true)">保存草稿</el-button>
       <el-button type="primary" size="large" :disabled="!canSubmit" :loading="isSubmitting" @click="submitPage">
-        提交到知识库
+        {{ submitButtonText }}
       </el-button>
     </div>
 

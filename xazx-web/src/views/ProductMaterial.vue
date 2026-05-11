@@ -11,8 +11,10 @@ const products = ref([
   { id: 1, name: '网站监测系统', code: 'website_monitor' },
   { id: 2, name: 'WAF', code: 'waf' },
   { id: 3, name: '动态防御', code: 'dynamic_defense' },
-  { id: 4, name: '全流量威胁分析系统', code: 'traffic_analysis' },
-  { id: 5, name: 'API功能模块', code: 'api_module' },
+  { id: 4, name: '全流量分析', code: 'traffic_analysis' },
+  { id: 5, name: 'API模块', code: 'api_module' },
+  { id: 6, name: '大模型安全', code: 'llm_security' },
+  { id: 7, name: '其他', code: 'other' },
 ])
 
 // 文件分类
@@ -44,7 +46,7 @@ const uploadTitle = ref('')
 const uploadDesc = ref('')
 const uploadFileList = ref<any[]>([])
 
-const stats = ref({ total: 0, products: 5, categories: 8, size: '0 MB' })
+const stats = ref({ total: 0, products: 7, categories: 8, size: '0 MB' })
 
 // API 基础路径（通过 Vite 代理转发到 PHP 后端）
 const API_BASE = '/api'
@@ -260,6 +262,9 @@ onMounted(() => {
           </el-button>
           <el-button type="primary" @click="isUploadDialogVisible = true">
             <el-icon class="mr-1"><Upload /></el-icon> 上传
+          </el-button>
+          <el-button type="success" @click="$router.push('/knowledge/manual-entry?mode=product')">
+            <el-icon class="mr-1"><Document /></el-icon> 手动编写
           </el-button>
         </div>
       </div>
