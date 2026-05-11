@@ -14,7 +14,8 @@ const handleLogout = () => {
 const roleLabels: Record<string, string> = {
   super_admin: 'SUPER_ADMIN',
   admin: 'ADMIN',
-  user: 'USER'
+  uploader: 'UPLOADER',
+  viewer: 'VIEWER',
 }
 
 const adminLinks = [
@@ -56,11 +57,11 @@ const isActive = (link: any) => {
 
     <div class="flex items-center gap-3">
       <span
-        v-if="auth.user?.role"
+        v-if="auth.user?.role_name"
         class="geek-tag"
-        :class="auth.user.role === 'super_admin' ? 'geek-tag-primary' : 'geek-tag-ghost'"
+        :class="auth.user.role_name === 'super_admin' ? 'geek-tag-primary' : 'geek-tag-ghost'"
       >
-        {{ roleLabels[auth.user.role] || auth.user.role }}
+        {{ roleLabels[auth.user.role_name] || auth.user.role_label || auth.user.role_name }}
       </span>
 
       <button class="p-2 text-on-surface-variant hover:text-on-surface transition-colors">

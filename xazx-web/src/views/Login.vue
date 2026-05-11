@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -9,13 +10,26 @@ const auth = useAuthStore()
 const identifier = ref('')
 const password = ref('')
 const hasError = ref(false)
+const errorMsg = ref('')
+const loading = ref(false)
 
-const handleLogin = () => {
-  if (identifier.value && password.value) {
-    auth.login(identifier.value, password.value)
-    router.push('/')
-  } else {
+const handleLogin = async () => {
+  if (!identifier.value || !password.value) {
     hasError.value = true
+    errorMsg.value = '请输入账号和密码'
+    return
+  }
+  hasError.value = false
+  loading.value = true
+  try {
+    await auth.login(identifier.value, password.value)
+    ElMessage.success('登录成功')
+    router.push('/')
+  } catch (e: any) {
+    hasError.value = true
+    errorMsg.value = e.message || '登录失败'
+  } finally {
+    loading.value = false
   }
 }
 </script>
@@ -74,7 +88,7 @@ const handleLogin = () => {
             <div v-if="hasError" class="p-3 border border-error bg-error-container/30 flex items-center gap-3">
               <el-icon class="text-error text-lg"><WarningFilled /></el-icon>
               <div class="flex-grow">
-                <p class="text-xs font-semibold text-error">凭证无效，请检查您的账号和密码。</p>
+                <p class="text-xs font-semibold text-error">{{ errorMsg }}</p>
               </div>
             </div>
 
@@ -88,7 +102,7 @@ const handleLogin = () => {
                   type="text"
                   id="identifier"
                   v-model="identifier"
-                  placeholder="如: super 或 admin"
+                  placeholder="请输入账号"
                   class="w-full pl-2 py-3 bg-transparent border-0 border-b-2 border-outline focus:border-primary focus:ring-0 text-on-surface placeholder:text-secondary/50 font-medium transition-all font-mono"
                 >
               </div>
@@ -100,7 +114,6 @@ const handleLogin = () => {
                 <label for="password" class="flex items-center gap-1 text-xs font-bold tracking-wider text-on-surface-variant uppercase">
                   <el-icon class="text-base"><Lock /></el-icon>登录密码
                 </label>
-                <a href="#" v-if="false" class="text-xs font-semibold text-primary hover:text-primary-dim transition-colors">忘记密码？</a>
               </div>
               <div class="relative group mt-1">
                 <input
@@ -114,14 +127,18 @@ const handleLogin = () => {
             </div>
 
             <!-- Sign In Button -->
-            <button type="submit" class="w-full bg-on-surface text-on-primary font-bold py-3 hover:bg-on-surface-variant active:opacity-90 transition-all flex items-center justify-center gap-2 mt-2">
-              登录系统
+            <button
+              type="submit"
+              :disabled="loading"
+              class="w-full bg-on-surface text-on-primary font-bold py-3 hover:bg-on-surface-variant active:opacity-90 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
+            >
+              {{ loading ? '登录中...' : '登录系统' }}
               <el-icon class="text-lg"><Right /></el-icon>
             </button>
           </form>
 
           <div class="mt-10 pt-6 border-t border-outline text-center">
-            <p class="text-xs text-secondary">仅限授权人员访问。为了合规和安全，系统将记录所有访问日志。</p>
+            <p class="text-xs text-secondary">默认账号：super / super123 或 admin / admin123</p>
           </div>
         </div>
       </div>

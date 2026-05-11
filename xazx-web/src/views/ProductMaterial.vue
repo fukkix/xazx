@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import {
   Upload, Search, Delete, Document, Picture, DataBoard,
-  Filter, RefreshRight, Box, Collection, Files, Monitor
+  Filter, RefreshRight, Box, Collection, Files, Monitor, View, Check, Close
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useAuthStore } from '../stores/auth'
+import { authApi } from '../services/auth'
 
 // 产品列表
 const products = ref([
@@ -38,6 +40,10 @@ const pageSize = ref(15)
 const searchKeyword = ref('')
 const filterProduct = ref('')
 const filterCategory = ref('')
+const filterStatus = ref('')
+
+const auth = useAuthStore()
+const canAudit = computed(() => auth.hasPermission('product.audit'))
 
 const isUploadDialogVisible = ref(false)
 const uploadProduct = ref('')
@@ -53,7 +59,9 @@ const API_BASE = '/api'
 
 const fetchStats = async () => {
   try {
-    const res = await fetch(`${API_BASE}/files.php?size=1000`)
+    const res = await fetch(`${API_BASE}/files.php?size=1000`, {
+      headers: auth.token ? { 'X-Token': auth.token } : {}
+    })
     const data = await res.json()
     if (data.success) {
       stats.value.total = data.data.total
@@ -74,10 +82,13 @@ const fetchFiles = async () => {
     if (filterProduct.value) params.append('product_id', filterProduct.value)
     if (filterCategory.value) params.append('category_id', filterCategory.value)
     if (searchKeyword.value) params.append('keyword', searchKeyword.value)
+    if (filterStatus.value) params.append('status', filterStatus.value)
     params.append('page', String(currentPage.value))
     params.append('size', String(pageSize.value))
 
-    const res = await fetch(`${API_BASE}/files.php?${params}`)
+    const res = await fetch(`${API_BASE}/files.php?${params}`, {
+      headers: auth.token ? { 'X-Token': auth.token } : {}
+    })
     const data = await res.json()
     if (data.success) {
       tableData.value = data.data.list
@@ -106,11 +117,12 @@ const handleUpload = async () => {
   try {
     const res = await fetch(`${API_BASE}/upload.php`, {
       method: 'POST',
+      headers: auth.token ? { 'X-Token': auth.token } : {},
       body: formData
     })
     const data = await res.json()
     if (data.success) {
-      ElMessage.success('上传成功')
+      ElMessage.success(data.message || '上传成功')
       isUploadDialogVisible.value = false
       resetUploadForm()
       fetchFiles()
@@ -140,7 +152,7 @@ const handleDelete = async (row: any) => {
     })
     const res = await fetch(`${API_BASE}/delete.php`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(auth.token ? { 'X-Token': auth.token } : {}) },
       body: JSON.stringify({ id: row.id })
     })
     const data = await res.json()
@@ -158,6 +170,28 @@ const handleDelete = async (row: any) => {
 
 const handlePreview = (row: any) => {
   window.open(`http://localhost/xazx-admin/${row.file_path}`, '_blank')
+}
+
+const handleAudit = async (row: any, status: 'approved' | 'rejected') => {
+  try {
+    await authApi.auditFile(row.id, status)
+    ElMessage.success(status === 'approved' ? '审核通过' : '已拒绝')
+    fetchFiles()
+  } catch (e: any) {
+    ElMessage.error(e.message)
+  }
+}
+
+const statusTagType = (status: string) => {
+  if (status === 'approved') return 'success'
+  if (status === 'rejected') return 'danger'
+  return 'warning'
+}
+
+const statusLabel = (status: string) => {
+  if (status === 'approved') return '已通过'
+  if (status === 'rejected') return '已拒绝'
+  return '待审核'
 }
 
 const getFileIcon = (type: string) => {
@@ -219,7 +253,7 @@ onMounted(() => {
           <span class="p-2 bg-surface-container-high text-tertiary border border-outline inline-flex">
             <el-icon :size="20"><Monitor /></el-icon>
           </span>
-          <span class="geek-tag geek-tag-ghost">5 PRODS</span>
+          <span class="geek-tag geek-tag-ghost">{{ stats.products }} PRODS</span>
         </div>
         <h3 class="geek-label mb-1">产品分类</h3>
         <div class="text-3xl font-bold text-on-surface font-mono">{{ stats.products }}</div>
@@ -251,13 +285,18 @@ onMounted(() => {
           <el-select v-model="filterCategory" placeholder="全部分类" clearable style="width: 160px" @change="currentPage = 1; fetchFiles()">
             <el-option v-for="c in fileCategories" :key="c.id" :label="c.name" :value="c.id" />
           </el-select>
+          <el-select v-if="canAudit" v-model="filterStatus" placeholder="全部状态" clearable style="width: 140px" @change="currentPage = 1; fetchFiles()">
+            <el-option label="待审核" value="pending" />
+            <el-option label="已通过" value="approved" />
+            <el-option label="已拒绝" value="rejected" />
+          </el-select>
           <el-input v-model="searchKeyword" placeholder="搜索文件名..." clearable style="width: 220px" @keyup.enter="currentPage = 1; fetchFiles()">
             <template #prefix><el-icon><Search /></el-icon></template>
           </el-input>
           <el-button @click="currentPage = 1; fetchFiles()">
             <el-icon class="mr-1"><Filter /></el-icon> 筛选
           </el-button>
-          <el-button plain @click="searchKeyword = ''; filterProduct = ''; filterCategory = ''; currentPage = 1; fetchFiles()">
+          <el-button plain @click="searchKeyword = ''; filterProduct = ''; filterCategory = ''; filterStatus = ''; currentPage = 1; fetchFiles()">
             <el-icon class="mr-1"><RefreshRight /></el-icon> 重置
           </el-button>
           <el-button type="primary" @click="isUploadDialogVisible = true">
@@ -302,18 +341,31 @@ onMounted(() => {
             <span class="text-secondary font-mono text-xs">{{ scope.row.file_size_human }}</span>
           </template>
         </el-table-column>
+        <el-table-column label="状态" width="90">
+          <template #default="scope">
+            <el-tag size="small" :type="statusTagType(scope.row.status)">{{ statusLabel(scope.row.status) }}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="created_at" label="上传时间" width="150">
           <template #default="scope">
             <span class="text-secondary font-mono text-xs">{{ scope.row.created_at }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" align="right" width="150" fixed="right">
+        <el-table-column label="操作" align="right" width="180" fixed="right">
           <template #default="scope">
             <div class="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
               <el-button link type="primary" @click="handlePreview(scope.row)">
                 <el-icon><View /></el-icon> 查看
               </el-button>
-              <el-button link type="danger" @click="handleDelete(scope.row)">
+              <template v-if="canAudit && scope.row.status === 'pending'">
+                <el-button link type="success" @click="handleAudit(scope.row, 'approved')">
+                  <el-icon><Check /></el-icon> 通过
+                </el-button>
+                <el-button link type="danger" @click="handleAudit(scope.row, 'rejected')">
+                  <el-icon><Close /></el-icon> 拒绝
+                </el-button>
+              </template>
+              <el-button v-if="auth.hasPermission('product.delete')" link type="danger" @click="handleDelete(scope.row)">
                 <el-icon><Delete /></el-icon> 删除
               </el-button>
             </div>

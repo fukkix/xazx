@@ -100,11 +100,15 @@ const router = createRouter({
 })
 
 // Route Guard
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const auth = useAuthStore()
-  if (to.meta.requiresAuth && !auth.user) {
+  // 尝试恢复登录状态
+  if (!auth.isLoggedIn && localStorage.getItem('auth-token')) {
+    await auth.restore()
+  }
+  if (to.meta.requiresAuth && !auth.isLoggedIn) {
     next({ name: 'login' })
-  } else if (to.name === 'login' && auth.user) {
+  } else if (to.name === 'login' && auth.isLoggedIn) {
     next({ name: 'dashboard' })
   } else {
     next()
