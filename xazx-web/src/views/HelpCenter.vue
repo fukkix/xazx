@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import {
-  Monitor, UploadDocument, DocumentChecked, UserFilled, Search, View, EditPen, Check, Warning, Lock
+  Monitor, Upload, DocumentChecked, UserFilled, Search, View, EditPen, Check, Warning, Lock
 } from '@element-plus/icons-vue'
 
 const activeSection = ref('overview')
@@ -9,7 +9,7 @@ const activeSection = ref('overview')
 const sections = [
   { key: 'overview', label: '平台概述', icon: Monitor },
   { key: 'portal', label: '前台浏览', icon: View },
-  { key: 'material', label: '产品资料管理', icon: UploadDocument },
+  { key: 'material', label: '产品资料管理', icon: Upload },
   { key: 'wiki', label: '知识库编写', icon: EditPen },
   { key: 'audit', label: '审核流程', icon: Check },
   { key: 'account', label: '账号与权限', icon: UserFilled },
