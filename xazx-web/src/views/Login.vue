@@ -27,7 +27,12 @@ const handleLogin = async () => {
     router.push('/')
   } catch (e: any) {
     hasError.value = true
-    errorMsg.value = e.message || '登录失败'
+    const msg = e.message || '登录失败'
+    if (msg.includes('Unexpected token') || msg.includes('not valid JSON') || msg.includes('<!DOCTYPE')) {
+      errorMsg.value = '服务器响应异常，请检查后端服务是否正常运行'
+    } else {
+      errorMsg.value = msg
+    }
   } finally {
     loading.value = false
   }

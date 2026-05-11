@@ -10,7 +10,16 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     ...options,
     headers: { ...headers, ...(options?.headers as Record<string, string> || {}) },
   })
-  const data = await res.json()
+  const contentType = res.headers.get('content-type') || ''
+  let data: any
+  try {
+    data = await res.json()
+  } catch (e) {
+    if (!contentType.includes('application/json')) {
+      throw new Error('服务器响应异常，请检查后端服务是否正常运行')
+    }
+    throw new Error('解析响应失败')
+  }
   if (!data.success) {
     throw new Error(data.message || '请求失败')
   }
