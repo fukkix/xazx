@@ -151,7 +151,7 @@ const deleteRole = async (row: Role) => {
 }
 
 const roleLabel = (name: string) => {
-  const map: Record<string, string> = { super_admin: '系统超管', admin: '管理员', uploader: '资料上传员', viewer: '访客' }
+  const map: Record<string, string> = { super_admin: '系统超管', admin: '管理员', uploader: '资料上传员' }
   return map[name] || name
 }
 

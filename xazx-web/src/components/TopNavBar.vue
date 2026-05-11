@@ -15,7 +15,7 @@ const roleLabels: Record<string, string> = {
   super_admin: 'SUPER_ADMIN',
   admin: 'ADMIN',
   uploader: 'UPLOADER',
-  viewer: 'VIEWER',
+
 }
 
 const adminLinks = [
