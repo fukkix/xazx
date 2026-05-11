@@ -31,7 +31,7 @@ const sections = [
     <div class="flex gap-6">
       <!-- Left Sidebar -->
       <aside class="w-56 flex-shrink-0">
-        <div class="geek-panel p-3 space-y-1 sticky top-4">
+        <div class="geek-panel p-3 space-y-1 sticky top-0">
           <button
             v-for="s in sections"
             :key="s.key"
