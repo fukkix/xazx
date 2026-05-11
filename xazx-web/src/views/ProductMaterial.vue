@@ -302,7 +302,7 @@ onMounted(() => {
           <el-button type="primary" @click="isUploadDialogVisible = true">
             <el-icon class="mr-1"><Upload /></el-icon> 上传
           </el-button>
-          <el-button type="success" @click="$router.push('/knowledge/manual-entry?mode=product')">
+          <el-button type="primary" @click="$router.push('/knowledge/manual-entry?mode=product')">
             <el-icon class="mr-1"><Document /></el-icon> 手动编写
           </el-button>
         </div>
@@ -358,7 +358,7 @@ onMounted(() => {
                 <el-icon><View /></el-icon> 查看
               </el-button>
               <template v-if="canAudit && scope.row.status === 'pending'">
-                <el-button link type="success" @click="handleAudit(scope.row, 'approved')">
+                <el-button link type="primary" @click="handleAudit(scope.row, 'approved')">
                   <el-icon><Check /></el-icon> 通过
                 </el-button>
                 <el-button link type="danger" @click="handleAudit(scope.row, 'rejected')">

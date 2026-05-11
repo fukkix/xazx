@@ -122,7 +122,7 @@ const handleDownload = (row: any) => {
             <el-button size="small" type="primary" link @click="handlePreview(scope.row)">
               预览
             </el-button>
-            <el-button size="small" type="success" link @click="handleDownload(scope.row)">
+            <el-button size="small" type="primary" link @click="handleDownload(scope.row)">
               下载
             </el-button>
             <el-button size="small" type="danger" link>
