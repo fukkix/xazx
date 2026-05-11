@@ -16,7 +16,7 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     data = await res.json()
   } catch (e) {
     if (!contentType.includes('application/json')) {
-      throw new Error('服务器响应异常，请检查后端服务是否正常运行')
+      throw new Error(`服务器响应异常 (HTTP ${res.status})，请检查后端服务是否正常运行。响应类型: ${contentType || 'unknown'}`)
     }
     throw new Error('解析响应失败')
   }
