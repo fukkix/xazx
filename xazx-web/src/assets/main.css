@@ -4,16 +4,16 @@
   /* ── Design System: Geek / Tech Document ── */
 
   /* Primary: Royal Blue */
-  --color-primary: #2563EB;
-  --color-primary-dim: #1d4ed8;
-  --color-primary-container: #dbeafe;
-  --color-primary-fixed: #dbeafe;
-  --color-primary-fixed-dim: #bfdbfe;
+  --color-primary: #1368bf;
+  --color-primary-dim: #0f5399;
+  --color-primary-container: #e9f0f9;
+  --color-primary-fixed: #e9f0f9;
+  --color-primary-fixed-dim: #d0e1f2;
   --color-on-primary: #ffffff;
-  --color-on-primary-container: #1e40af;
-  --color-on-primary-fixed: #1e3a8a;
-  --color-on-primary-fixed-variant: #1d4ed8;
-  --color-inverse-primary: #60a5fa;
+  --color-on-primary-container: #0e4a8a;
+  --color-on-primary-fixed: #0e4a8a;
+  --color-on-primary-fixed-variant: #0f5399;
+  --color-inverse-primary: #5a95d2;
 
   /* Secondary: Slate Gray */
   --color-secondary: #52525b;
@@ -48,7 +48,7 @@
   --color-surface: #fafafa;
   --color-surface-dim: #e4e4e7;
   --color-surface-bright: #ffffff;
-  --color-surface-tint: #2563EB;
+  --color-surface-tint: #1368bf;
   --color-surface-variant: #f4f4f5;
   --color-surface-container: #f5f5f5;
   --color-surface-container-low: #fafafa;

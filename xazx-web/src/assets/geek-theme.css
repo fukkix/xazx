@@ -4,13 +4,13 @@
 
 /* 1. Element Plus CSS Variables Override */
 :root {
-  --el-color-primary: #1C4792;
-  --el-color-primary-light-3: #2b70e0;
-  --el-color-primary-light-5: #4c95ef;
-  --el-color-primary-light-7: #85bbf8;
-  --el-color-primary-light-8: #bfdbfe;
-  --el-color-primary-light-9: #dbeafe;
-  --el-color-primary-dark-2: #13379a;
+  --el-color-primary: #1368bf;
+  --el-color-primary-light-3: #5a95d2;
+  --el-color-primary-light-5: #89b4df;
+  --el-color-primary-light-7: #b8d2ec;
+  --el-color-primary-light-8: #d0e1f2;
+  --el-color-primary-light-9: #e9f0f9;
+  --el-color-primary-dark-2: #0f5399;
 
   --el-color-success: #16a34a;
   --el-color-success-light-3: #22c55e;
@@ -96,7 +96,7 @@
 }
 
 .el-input__wrapper.is-focus {
-  box-shadow: 0 0 0 1px #2563EB inset !important;
+  box-shadow: 0 0 0 1px #1368bf inset !important;
 }
 
 .el-table {
@@ -186,8 +186,8 @@
 }
 
 .el-pagination.is-background .number.is-active {
-  background-color: #2563EB;
-  border-color: #2563EB;
+  background-color: #1368bf;
+  border-color: #1368bf;
 }
 
 .el-menu {
@@ -279,8 +279,8 @@
 }
 
 .geek-tag-primary {
-  background: #2563EB;
-  border-color: #2563EB;
+  background: #1368bf;
+  border-color: #1368bf;
   color: #ffffff;
 }
 
@@ -324,7 +324,7 @@
 .geek-data-line::before {
   content: '>';
   font-family: 'JetBrains Mono', 'Consolas', monospace;
-  color: #2563EB;
+  color: #1368bf;
   font-size: 10px;
 }
 
@@ -347,11 +347,11 @@
   display: block;
   width: 4px;
   height: 16px;
-  background: #2563EB;
+  background: #1368bf;
 }
 
 /* 4. Selection style */
 ::selection {
-  background: #2563EB;
+  background: #1368bf;
   color: #ffffff;
 }
